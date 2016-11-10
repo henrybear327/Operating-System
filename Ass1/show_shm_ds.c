@@ -30,19 +30,19 @@ void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
 int main()
 {
 	// ipcs -m
-	// int segment_id = getShareMemory();
-	// printf("segment_id = %d\n", segment_id);
-	int segment_id = 65555;
-	if(segment_id == -1)
-		return 0;
+	int segment_id = getShareMemory();
+	printf("segment_id = %d\n", segment_id);
+	//int segment_id = 1769490;
+	//if(segment_id == -1)
+		//return 0;
 
-	struct shmid_ds shmbuffer;
+	struct shmid_ds shmbuffer, shmbuffer1;
 
 	int error = shmctl(segment_id, IPC_STAT, &shmbuffer);
 
 	if(error == 0) {
 		printf("ok\n");
-		
+	
 		// print shared memory info
 		printf("Segment ID: %d\n",segment_id);
 		printf("Key: %d\n",(int)shmbuffer.shm_perm.key);
