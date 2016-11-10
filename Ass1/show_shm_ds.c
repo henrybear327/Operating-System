@@ -6,11 +6,11 @@
 #define NONE "\033[m"
 #define RED "\033[0;32;31m"
 #define GREEN "\033[0;32;32m"
+#define CYAN "\033[0;36m"
 
-int getShareMemory()
+int getShareMemory(key_t key)
 {
 	int shm_id;
-	key_t key = 0;
 	shm_id=shmget(key,4096,IPC_CREAT|0666);   
 	if(shm_id==-1)
 	{
@@ -34,8 +34,12 @@ void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
 int main()
 {
 	// ipcs -m
-	//int segment_id = 1769490;
-	int segment_id = getShareMemory();
+
+	// get new shared memory
+	int user_input_key;
+	printf(CYAN "Please enter a key for creating the shared memory: " NONE);
+	scanf("%d", &user_input_key);
+	int segment_id = getShareMemory(user_input_key);
 	if(segment_id == -1)
 		return 0;
 
@@ -43,7 +47,7 @@ int main()
 	struct shmid_ds shmbuffer;
 	int error = shmctl(segment_id, IPC_STAT, &shmbuffer); 
 	if(error == 0) {
-		printf(GREEN "Shared memory info\n" NONE);
+		printf(GREEN "Just created a new shared memory\nThe fields are...\n" NONE);
 	
 		// print shared memory info
 		printf("Segment ID: %d\n",segment_id);
@@ -51,28 +55,10 @@ int main()
 		printf("Mode: %u\n",shmbuffer.shm_perm.mode);
 		printf("Owner uid: %u\n",shmbuffer.shm_perm.uid);
 		printf("Size: %lu\n",shmbuffer.shm_segsz);
-		printf("Number of attatch: %d\n",shmbuffer.shm_nattch);
+		printf("Number of attaches: %d\n",shmbuffer.shm_nattch);
 
 		// free memory 
 		deleteSharedMemory(segment_id, &shmbuffer);
-		
-		/*
-		// get address
-		char *shmaddr = (char *)shmat(segment_id, NULL, 0);
-		if ( (int)shmaddr == -1 ) {
-			printf(RED "Get shmaddr failed! (Shared memory will not be freed)\n" NONE);
-			return 0;
-		}
-
-		// detach all people
-		error = shmdt(shmaddr);
-		if(error == 0) {
-			printf("Shared memory %d freed\n", segment_id);
-			printf("errno = %d\n", errno);
-		} else {
-			printf("Shared memory can't be freed, errno = %d\n", errno);
-		}
-		*/
 	} else {
 		printf(RED "errno = %d\n" NONE, errno);
 		if(errno == 13)
