@@ -35,13 +35,19 @@ int main()
 {
 	// ipcs -m
 
-	// get new shared memory
-	int user_input_key;
-	printf(CYAN "Please enter a key for creating the shared memory: " NONE);
-	scanf("%d", &user_input_key);
-	int segment_id = getShareMemory(user_input_key);
-	if(segment_id == -1)
-		return 0;
+	printf(CYAN "Please enter a segment_id, or -1 to create a new shared memory: " NONE);
+	int segment_id;
+	scanf("%d", &segment_id);
+
+	if(segment_id == -1) {
+		// get new shared memory
+		int user_input_key;
+		printf(CYAN "Please enter a key for creating the shared memory: " NONE);
+		scanf("%d", &user_input_key);
+		segment_id = getShareMemory(user_input_key);
+		if(segment_id == -1)
+			return 0;
+	}
 
 	// get shared memory struct
 	struct shmid_ds shmbuffer;
