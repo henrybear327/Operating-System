@@ -3,6 +3,10 @@
 #include <sys/ipc.h>
 #include <errno.h>
 
+#define NONE "\033[m"
+#define RED "\033[0;32;31m"
+#define GREEN "\033[0;32;32m"
+
 int getShareMemory()
 {
 	int shm_id;
@@ -20,8 +24,8 @@ int getShareMemory()
 void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
 {
 	int error = shmctl(id, IPC_RMID, shmbuffer);	
-	if(error == 0)
-		printf("Memory freed\n");
+	if(error == 0 && errno == 0)
+		printf(GREEN "Shared memory freed successfully!\n" NONE);
 	else {
 		printf("errno = %d\n", errno);
 	}
