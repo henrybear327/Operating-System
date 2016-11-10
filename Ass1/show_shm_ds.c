@@ -27,7 +27,7 @@ void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
 	if(error == 0 && errno == 0)
 		printf(GREEN "Shared memory freed successfully!\n" NONE);
 	else {
-		printf("errno = %d\n", errno);
+		printf("Free error: errno = %d\n", errno);
 	}
 }
 
@@ -40,7 +40,7 @@ int main()
 	//if(segment_id == -1)
 		//return 0;
 
-	struct shmid_ds shmbuffer, shmbuffer1;
+	struct shmid_ds shmbuffer;
 
 	int error = shmctl(segment_id, IPC_STAT, &shmbuffer);
 
