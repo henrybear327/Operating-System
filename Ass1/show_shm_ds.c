@@ -17,6 +17,16 @@ int getShareMemory()
 	return shm_id; 
 }
 
+void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
+{
+	int error = shmctl(id, IPC_RMID, shmbuffer);	
+	if(error == 0)
+		printf("Memory freed\n");
+	else {
+		printf("errno = %d\n", errno);
+	}
+}
+
 int main()
 {
 	// ipcs -m
@@ -32,13 +42,35 @@ int main()
 
 	if(error == 0) {
 		printf("ok\n");
-
+		
+		// print shared memory info
 		printf("Segment ID: %d\n",segment_id);
 		printf("Key: %d\n",(int)shmbuffer.shm_perm.key);
 		printf("Mode: %u\n",shmbuffer.shm_perm.mode);
 		printf("Owner uid: %u\n",shmbuffer.shm_perm.uid);
 		printf("Size: %lu\n",shmbuffer.shm_segsz);
 		printf("Number of attatch: %d\n",shmbuffer.shm_nattch);
+
+		// get address
+		char *shmaddr = (char *)shmat(segment_id, NULL, 0);
+		if ( (int)shmaddr == -1 ) {
+			printf("get shmaddr failed\n");
+			return 0;
+		}
+
+		// free memory 
+		deleteSharedMemory(segment_id, &shmbuffer);
+		
+		/*
+		// detach all people
+		error = shmdt(shmaddr);
+		if(error == 0) {
+			printf("Shared memory %d freed\n", segment_id);
+			printf("errno = %d\n", errno);
+		} else {
+			printf("Shared memory can't be freed, errno = %d\n", errno);
+		}
+		*/
 	} else {
 		printf("errno = %d\n", errno);
 		if(errno == 13)
