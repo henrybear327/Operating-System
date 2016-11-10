@@ -20,8 +20,9 @@ int getShareMemory()
 int main()
 {
 	// ipcs -m
-	int segment_id = getShareMemory();
-	printf("segment_id = %d\n", segment_id);
+	// int segment_id = getShareMemory();
+	// printf("segment_id = %d\n", segment_id);
+	int segment_id = 65555;
 	if(segment_id == -1)
 		return 0;
 
@@ -31,12 +32,13 @@ int main()
 
 	if(error == 0) {
 		printf("ok\n");
+
 		printf("Segment ID: %d\n",segment_id);
-		printf("Key: %x\n",shmbuffer.shm_perm.key);
+		printf("Key: %d\n",(int)shmbuffer.shm_perm.key);
 		printf("Mode: %u\n",shmbuffer.shm_perm.mode);
 		printf("Owner uid: %u\n",shmbuffer.shm_perm.uid);
 		printf("Size: %lu\n",shmbuffer.shm_segsz);
-		printf("Number of attatch: %lu\n",shmbuffer.shm_nattch);
+		printf("Number of attatch: %d\n",shmbuffer.shm_nattch);
 	} else {
 		printf("errno = %d\n", errno);
 		if(errno == 13)
