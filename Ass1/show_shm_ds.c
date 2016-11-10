@@ -48,7 +48,7 @@ int main()
 	int error = shmctl(segment_id, IPC_STAT, &shmbuffer); 
 	if(error == 0) {
 		printf(GREEN "Just created a new shared memory\nThe fields are...\n" NONE);
-	
+
 		// print shared memory info
 		printf("Segment ID: %d\n",segment_id);
 		printf("Key: %d\n",(int)shmbuffer.shm_perm.key);
@@ -63,6 +63,8 @@ int main()
 		printf(RED "errno = %d\n" NONE, errno);
 		if(errno == 13)
 			printf(RED "permission denied\n" NONE);
+		if(errno == 22)
+			printf(RED "Invalid argument\n" NONE);
 	}
 
 	return 0;
