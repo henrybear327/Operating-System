@@ -14,7 +14,7 @@ int getShareMemory()
 	shm_id=shmget(key,4096,IPC_CREAT|0666);   
 	if(shm_id==-1)
 	{
-		printf("shmget error");
+		printf(RED "Can't get share memory" NONE);
 		return -1;
 	}
 
@@ -27,18 +27,17 @@ void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
 	if(error == 0)
 		printf(GREEN "Shared memory freed successfully!\n" NONE); // errno == 2??? Why?
 	else {
-		printf("Free error: errno = %d\n", errno);
+		printf(RED "Free error: errno = %d\n" NONE, errno);
 	}
 }
 
 int main()
 {
 	// ipcs -m
-	int segment_id = getShareMemory();
-	printf("segment_id = %d\n", segment_id);
 	//int segment_id = 1769490;
-	//if(segment_id == -1)
-		//return 0;
+	int segment_id = getShareMemory();
+	if(segment_id == -1)
+		return 0;
 
 	// get shared memory struct
 	struct shmid_ds shmbuffer;
@@ -54,17 +53,17 @@ int main()
 		printf("Size: %lu\n",shmbuffer.shm_segsz);
 		printf("Number of attatch: %d\n",shmbuffer.shm_nattch);
 
-		// get address
-		char *shmaddr = (char *)shmat(segment_id, NULL, 0);
-		if ( (int)shmaddr == -1 ) {
-			printf("get shmaddr failed\n");
-			return 0;
-		}
-
 		// free memory 
 		deleteSharedMemory(segment_id, &shmbuffer);
 		
 		/*
+		// get address
+		char *shmaddr = (char *)shmat(segment_id, NULL, 0);
+		if ( (int)shmaddr == -1 ) {
+			printf(RED "Get shmaddr failed! (Shared memory will not be freed)\n" NONE);
+			return 0;
+		}
+
 		// detach all people
 		error = shmdt(shmaddr);
 		if(error == 0) {
@@ -75,9 +74,9 @@ int main()
 		}
 		*/
 	} else {
-		printf("errno = %d\n", errno);
+		printf(RED "errno = %d\n" NONE, errno);
 		if(errno == 13)
-			printf("permission denied\n");
+			printf(RED "permission denied\n" NONE);
 	}
 
 	return 0;
