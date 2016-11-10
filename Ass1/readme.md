@@ -1,4 +1,4 @@
-# Makefile
+# [Makefile](http://mrbook.org/blog/tutorials/make/)
 
 The filename must be in **lowercase**
 
