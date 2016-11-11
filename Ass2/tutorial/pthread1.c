@@ -1,29 +1,31 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-void *thread_function() {
-	int i;
-	for ( i=0; i<3; i++) {
-		printf("Thread says hi! %d\n", i);
-		sleep(1); // 1 second
-	}
-	return NULL;
+void *thread_function()
+{
+    int i;
+    for (i = 0; i < 3; i++) {
+        printf("Thread says hi! %d\n", i);
+        sleep(1); // 1 second
+    }
+    return NULL;
 }
-int main(void) {
-	pthread_t mythread;
-	
-	printf("About to create thread\n");
-	if ( pthread_create( &mythread, NULL, thread_function, NULL) ) {
-		printf("error creating thread.");
-		abort();
-	}
+int main(void)
+{
+    pthread_t mythread;
 
-	printf("About to join thread\n");
-	if ( pthread_join ( mythread, NULL ) ) {
-		printf("error joining thread.");
-		abort();
-	}
-	printf("Finish joining the thread\n");
-	return 0;
+    printf("About to create thread\n");
+    if (pthread_create(&mythread, NULL, thread_function, NULL)) {
+        printf("error creating thread.");
+        abort();
+    }
+
+    printf("About to join thread\n");
+    if (pthread_join(mythread, NULL)) {
+        printf("error joining thread.");
+        abort();
+    }
+    printf("Finish joining the thread\n");
+    return 0;
 }
