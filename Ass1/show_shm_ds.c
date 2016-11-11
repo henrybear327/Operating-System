@@ -14,6 +14,7 @@ int getShareMemory(key_t key)
 	shm_id=shmget(key,4096,IPC_CREAT|0666);   
 	if(shm_id==-1)
 	{
+		perror("Get shared memory error");
 		printf(RED "Can't get share memory" NONE);
 		return -1;
 	}
@@ -27,6 +28,7 @@ void deleteSharedMemory(int id, struct shmid_ds* shmbuffer)
 	if(error == 0)
 		printf(GREEN "Shared memory freed successfully!\n" NONE); // errno == 2??? Why?
 	else {
+		perror("Free shared memory error");
 		printf(RED "Free error: errno = %d\n" NONE, errno);
 	}
 }
@@ -66,6 +68,7 @@ int main()
 		// free memory 
 		deleteSharedMemory(segment_id, &shmbuffer);
 	} else {
+		perror("Get shared memory information error");
 		printf(RED "errno = %d\n" NONE, errno);
 		if(errno == 13)
 			printf(RED "permission denied\n" NONE);
