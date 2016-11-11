@@ -65,22 +65,7 @@ int main(int argc, char **argv)
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
 
-    // create min(8, data_size) threads for sorting
-    int threadsToCreate = min(8, data_size);
-    printf(GREEN "Creating %d threads and start sorting...\n" NONE, threadsToCreate);
-
-    pthread_t mythread[threadsToCreate];
-    struct bound arguments[threadsToCreate];
-    for (int i = 0; i < threadsToCreate; i++) {
-        // set bound
-
-        // create threads, passing in the bound
-        if (pthread_create(&mythread[i], NULL, sorting_function, &arguments[i])) {
-            perror("Error creating threads");
-            printf(RED "Error creating thread. Errno = %d" NONE, errno);
-            abort();
-        }
-    }
+    // use merge sort
 
     // merge two consecutive bounds
 
