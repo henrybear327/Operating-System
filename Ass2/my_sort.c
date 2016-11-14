@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <assert.h>
 
@@ -17,7 +18,9 @@
 #define GREEN "\033[0;32;32m"
 #define CYAN "\033[0;36m"
 
-int *dataForSorting, *temporaryData;
+int *originalData, *temporaryData, *dataForSorting;
+
+int oneThreadStdQsortTime;
 
 struct sorting_parameter { // [l, r)
     int left_bound, right_bound;
@@ -29,36 +32,38 @@ void generateNumbersForSorting(int seed, int size)
            seed);
 
     srand(seed);
+    originalData = (int *)malloc(sizeof(int) * size);
     dataForSorting = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i < size; i++)
-        dataForSorting[i] = rand();
+        originalData[i] = rand();
 
+#if DEBUG == 1
     for (int i = 0; i < size; i++)
-        printf("%d%c", dataForSorting[i], i == size - 1 ? '\n' : ' ');
+        printf("%d%c", originalData[i], i == size - 1 ? '\n' : ' ');
     printf("\n");
+#endif
 
     temporaryData = (int *)malloc(sizeof(int) * size);
 }
 
-int cmp(const void *a, const void *b)
+void print_result(int data_size, char *string)
 {
-    return *((int *)a) - *((int *)b);
-}
-
-void print_result(int data_size)
-{
-    printf(GREEN "Sorting is done!\n" NONE);
     int distanceSum = 0;
 
+#if DEBUG == 1
+    printf(GREEN "The sorted array after doing %s is...\n" NONE, string);
     for (int i = 0; i < data_size; i++)
         printf("%d%c", dataForSorting[i], i == data_size - 1 ? '\n' : ' ');
+#endif
+
     for (int i = 1; i < data_size; i++)
         distanceSum += dataForSorting[i] - dataForSorting[i - 1];
     printf(GREEN
            "The sum of distance between consecutive numbers is %d\n" NONE,
            distanceSum);
 
+    printf("\n");
 #if DEBUG == 1
     assert(distanceSum == dataForSorting[data_size - 1] - dataForSorting[0]);
 #endif
@@ -66,13 +71,48 @@ void print_result(int data_size)
 
 void cleanup()
 {
+    free(originalData);
     free(dataForSorting);
     free(temporaryData);
 }
 
+inline int printTimeElapsed(int start, char* string)
+{
+    clock_t diff = clock() - start;
+    int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
+    //user + system
+    printf(CYAN "Total time taken by %s is %d.%03d second(s)\n" NONE, string, milliseconds/1000, milliseconds%1000);
+
+    return milliseconds;
+}
+
+int cmp(const void *a, const void *b)
+{
+    return *((int *)a) - *((int *)b);
+}
+
+void prepareArrayForSorting(int data_size)
+{
+    memcpy(dataForSorting, originalData, sizeof(int) * data_size);
+}
+
+void benchmarkOneThreadStdQsort(int data_size)
+{
+    // prepare the array for sorting
+    prepareArrayForSorting(data_size);
+
+    clock_t start = clock();
+
+    oneThreadStdQsortTime = printTimeElapsed(start, "qsort");
+    printf("\n");
+}
+
 int main(int argc, char **argv)
 {
-    clock_t start = clock(), diff;
+#if DEBUG == 1
+    printf(RED "********The debug mode is ON!********\n\n\n" NONE);
+#endif
+    clock_t start = clock();
 
     if (argc != 3) { // check if all arguments are given
         // fprintf(stderr, "Insufficient arguments");
@@ -88,14 +128,15 @@ int main(int argc, char **argv)
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
 
+    // Test the baseline sorting algorithm, qsort on 1 thread.
+    benchmarkOneThreadStdQsort(data_size);
+
     // print the result
-    print_result(data_size);
+    print_result(data_size, "benchmarkOneThreadStdQsort");
 
     cleanup();
 
-    diff = clock() - start;
-    int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
-    printf(CYAN "Time taken (user + system) %d.%03d second(s)" NONE, milliseconds/1000, milliseconds%1000);
+    printTimeElapsed(start, "the entire program");
 
     return 0;
 }
