@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     int rand_seed = atoi(argv[1]);
     int data_size = atoi(argv[2]);
 
-    newa = (int*) malloc(sizeof(int) * data_size);
+    newa = (int *)malloc(sizeof(int) * data_size);
 
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
         abort();
     }
 
-    if(pthread_create(&tidr, NULL, merge_sort, &mr)) {
+    if (pthread_create(&tidr, NULL, merge_sort, &mr)) {
         perror("Error creating left thread\n");
         abort();
     }
@@ -159,9 +159,9 @@ int main(int argc, char **argv)
     pthread_join(tidl, NULL);
     pthread_join(tidr, NULL);
 
-    //print_result(data_size);
+    // print_result(data_size);
 
-    //merge(0, data_size - 1);
+    // merge(0, data_size - 1);
 
     int mid = data_size / 2;
     int ai = 0;
