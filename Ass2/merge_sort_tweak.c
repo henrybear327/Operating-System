@@ -55,13 +55,18 @@ void merge(int i, int j)
         newa[newai++] = a[bi++];
     }
 
-    for (ai = 0; ai < (j - i + 1); ai++)
+    for (ai = 0; ai < (j - i + 1); ai++) {
+        // printf("%d = %d\n", i + ai, newa[ai]);
         a[i + ai] = newa[ai];
+    }
 }
 
 void *merge_sort(void *a)
 {
     NODE *p = (NODE *)a;
+    if (p->left_bound >= p->right_bound)
+        return NULL;
+
     NODE n1, n2;
     int mid = (p->left_bound + p->right_bound) / 2;
     // pthread_t tid1, tid2;
@@ -72,8 +77,7 @@ void *merge_sort(void *a)
     n2.left_bound = mid + 1;
     n2.right_bound = p->right_bound;
 
-    if (p->left_bound >= p->right_bound)
-        return NULL;
+    // printf("%d %d %d\n", p->left_bound, mid, p->right_bound);
 
     merge_sort(&n1);
     merge_sort(&n2);
@@ -93,7 +97,8 @@ void *merge_sort(void *a)
     */
 
     merge(p->left_bound, p->right_bound);
-    pthread_exit(NULL);
+    // pthread_exit(NULL);
+    return NULL;
 }
 
 void print_result(int data_size)
@@ -129,9 +134,9 @@ int main(int argc, char **argv)
 
     NODE ml, mr;
     ml.left_bound = 0;
-    ml.right_bound = data_size / 2 - 1;
+    ml.right_bound = data_size / 2;
 
-    mr.left_bound = data_size / 2;
+    mr.left_bound = data_size / 2 + 1;
     mr.right_bound = data_size - 1;
     pthread_t tidl, tidr;
 
@@ -148,7 +153,7 @@ int main(int argc, char **argv)
     pthread_join(tidl, NULL);
     pthread_join(tidr, NULL);
 
-    merge(0, data_size / 2);
+    merge(0, data_size - 1);
 
     print_result(data_size);
 
