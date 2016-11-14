@@ -195,6 +195,7 @@ void benchmarkOneThreadMergeSort(int data_size)
     // ensure merge sort is correct
     for(int i = 0; i < data_size; i++)
         assert(dataForSorting[i] == comparisionData[i]);
+    printf(GREEN "The sorted result is verified - correct!\n" NONE);
 #endif
 }
 
@@ -265,6 +266,7 @@ void benchmarkMultiThreadMergeSort(int data_size)
     // ensure merge sort is correct
     for(int i = 0; i < data_size; i++)
         assert(dataForSorting[i] == comparisionData[i]);
+    printf(GREEN "The sorted result is verified - correct!\n" NONE);
 #endif
 
     // get improvement data
