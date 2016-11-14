@@ -239,6 +239,8 @@ void multiThreadMergeSortDriver(int left, int right)
             abort();
         }
 
+        pthread_join(mythread, NULL); // TODO: How to use this??
+
         return; // stop at this level
     } else {
         mergeSort(left, mid);
