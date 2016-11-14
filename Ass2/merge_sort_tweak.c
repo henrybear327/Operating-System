@@ -64,7 +64,7 @@ void *merge_sort(void *a)
     NODE *p = (NODE *)a;
     NODE n1, n2;
     int mid = (p->i + p->j) / 2;
-    pthread_t tid1, tid2;
+    // pthread_t tid1, tid2;
     int ret;
 
     n1.i = p->i;
@@ -76,6 +76,9 @@ void *merge_sort(void *a)
     if (p->i >= p->j)
         return NULL;
 
+    merge_sort(&n1);
+    merge_sort(&n2);
+    /*
     ret = pthread_create(&tid1, NULL, merge_sort, &n1);
     if (ret) {
         printf("%d %s - unable to create thread - ret - %d\n", __LINE__,
@@ -92,6 +95,7 @@ void *merge_sort(void *a)
 
     pthread_join(tid1, NULL);
     pthread_join(tid2, NULL);
+    */
 
     merge(p->i, p->j);
     pthread_exit(NULL);
@@ -128,21 +132,28 @@ int main(int argc, char **argv)
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
 
-    NODE m;
-    m.i = 0;
-    m.j = data_size - 1;
-    pthread_t tid;
+    NODE ml, mr;
+    ml.i = 0;
+    ml.j = data_size / 2 - 1;
+
+    mr.i = data_size / 2;
+    mr.j = data_size - 1;
+    pthread_t tidl, tidr;
 
     int ret;
 
-    ret = pthread_create(&tid, NULL, merge_sort, &m);
+    ret = pthread_create(&tidl, NULL, merge_sort, &ml);
+    ret = pthread_create(&tidr, NULL, merge_sort, &mr);
     if (ret) {
         printf("%d %s - unable to create thread - ret - %d\n", __LINE__,
                __FUNCTION__, ret);
         exit(1);
     }
 
-    pthread_join(tid, NULL);
+    pthread_join(tidl, NULL);
+    pthread_join(tidr, NULL);
+
+    merge(0, data_size - 1);
 
     print_result(data_size);
 
