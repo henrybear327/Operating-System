@@ -28,8 +28,8 @@ void generateNumbersForSorting(int seed, int size)
 }
 
 typedef struct node {
-    int i;
-    int j;
+    int left_bound;
+    int right_bound;
 } NODE;
 
 void merge(int i, int j)
@@ -63,41 +63,36 @@ void *merge_sort(void *a)
 {
     NODE *p = (NODE *)a;
     NODE n1, n2;
-    int mid = (p->i + p->j) / 2;
+    int mid = (p->left_bound + p->right_bound) / 2;
     // pthread_t tid1, tid2;
-    int ret;
 
-    n1.i = p->i;
-    n1.j = mid;
+    n1.left_bound = p->left_bound;
+    n1.right_bound = mid;
 
-    n2.i = mid + 1;
-    n2.j = p->j;
+    n2.left_bound = mid + 1;
+    n2.right_bound = p->right_bound;
 
-    if (p->i >= p->j)
+    if (p->left_bound >= p->right_bound)
         return NULL;
 
     merge_sort(&n1);
     merge_sort(&n2);
     /*
-    ret = pthread_create(&tid1, NULL, merge_sort, &n1);
-    if (ret) {
-        printf("%d %s - unable to create thread - ret - %d\n", __LINE__,
-               __FUNCTION__, ret);
-        exit(1);
+    if (pthread_create(&tid1, NULL, merge_sort, &n1)) {
+        perror("Error creating left thread\n");
+        abort();
     }
 
-    ret = pthread_create(&tid2, NULL, merge_sort, &n2);
-    if (ret) {
-        printf("%d %s - unable to create thread - ret - %d\n", __LINE__,
-               __FUNCTION__, ret);
-        exit(1);
+    if (pthread_create(&tid2, NULL, merge_sort, &n2)) {
+        perror("Error creating right thread\n");
+        abort();
     }
 
     pthread_join(tid1, NULL);
     pthread_join(tid2, NULL);
     */
 
-    merge(p->i, p->j);
+    merge(p->left_bound, p->right_bound);
     pthread_exit(NULL);
 }
 
@@ -133,27 +128,27 @@ int main(int argc, char **argv)
     generateNumbersForSorting(rand_seed, data_size);
 
     NODE ml, mr;
-    ml.i = 0;
-    ml.j = data_size / 2 - 1;
+    ml.left_bound = 0;
+    ml.right_bound = data_size / 2 - 1;
 
-    mr.i = data_size / 2;
-    mr.j = data_size - 1;
+    mr.left_bound = data_size / 2;
+    mr.right_bound = data_size - 1;
     pthread_t tidl, tidr;
 
-    int ret;
+    if (pthread_create(&tidl, NULL, merge_sort, &ml)) {
+        perror("Error creating left thread\n");
+        abort();
+    }
 
-    ret = pthread_create(&tidl, NULL, merge_sort, &ml);
-    ret = pthread_create(&tidr, NULL, merge_sort, &mr);
-    if (ret) {
-        printf("%d %s - unable to create thread - ret - %d\n", __LINE__,
-               __FUNCTION__, ret);
-        exit(1);
+    if(pthread_create(&tidr, NULL, merge_sort, &mr)) {
+        perror("Error creating left thread\n");
+        abort();
     }
 
     pthread_join(tidl, NULL);
     pthread_join(tidr, NULL);
 
-    merge(0, data_size - 1);
+    merge(0, data_size / 2);
 
     print_result(data_size);
 
