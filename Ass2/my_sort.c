@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-int mode = 0; // mode 0: multithread, mode 1: simple qsort
+int mode = 1; // mode 0: multithread, mode 1: simple qsort
 
 #define NONE "\033[m"
 #define RED "\033[0;32;31m"
