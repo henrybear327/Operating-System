@@ -57,7 +57,7 @@ void merge(int i, int j)
         newa[newai++] = a[bi++];
     }
 
-    
+
     for (ai = 0; ai < (j - i + 1); ai++) {
         // printf("%d = %d\n", i + ai, newa[ai]);
         a[i + ai] = newa[ai];
