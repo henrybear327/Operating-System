@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define NOTHREADS 2
 
@@ -10,6 +11,7 @@
 #define CYAN "\033[0;36m"
 
 int *a;
+int *newa;
 
 void generateNumbersForSorting(int seed, int size)
 {
@@ -38,7 +40,7 @@ void merge(int i, int j)
     int ai = i;
     int bi = mid + 1;
 
-    int newa[j - i + 1], newai = 0;
+    int newai = 0;
 
     while (ai <= mid && bi <= j) {
         if (a[ai] > a[bi])
@@ -55,10 +57,13 @@ void merge(int i, int j)
         newa[newai++] = a[bi++];
     }
 
+    
     for (ai = 0; ai < (j - i + 1); ai++) {
         // printf("%d = %d\n", i + ai, newa[ai]);
         a[i + ai] = newa[ai];
     }
+
+    // memcpy(a + i, newa, sizeof(int) * (j - i + 1));
 }
 
 void *merge_sort(void *a)
@@ -128,6 +133,8 @@ int main(int argc, char **argv)
     // my_sort rand_seed data_size
     int rand_seed = atoi(argv[1]);
     int data_size = atoi(argv[2]);
+
+    newa = (int*) malloc(sizeof(int) * data_size);
 
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
