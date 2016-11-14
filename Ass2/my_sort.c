@@ -15,8 +15,11 @@
 1 - only messages, asserts, and merge sort correctness check, no array data
 2 - messages, asserts, merge sort correctness check, and array data
 */
+
+int threshold = 1 << 10;
+
 #define DEBUG 1
-#define TEST_THRESHOLD 1
+#define TEST_THRESHOLD 0 // 1 on, 0 off
 
 #if TEST_THRESHOLD == 1
 #define THRESHOLD_MAX_POWER 25
@@ -33,8 +36,6 @@ struct {
 #define CYAN "\033[0;36m"
 
 int *originalData, *dataForSorting, *comparisionData, *tmpData;
-
-int threshold = 1 << 10;
 
 // obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
