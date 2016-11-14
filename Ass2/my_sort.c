@@ -23,7 +23,7 @@
 #define GREEN "\033[0;32;32m"
 #define CYAN "\033[0;36m"
 
-int *originalData, *temporaryData, *dataForSorting;
+int *originalData, *dataForSorting, *comparisionData;
 
 // obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
@@ -57,7 +57,6 @@ void generateNumbersForSorting(int seed, int size)
     srand(seed);
     originalData = (int *)malloc(sizeof(int) * size);
     dataForSorting = (int *)malloc(sizeof(int) * size);
-    temporaryData = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i < size; i++)
         originalData[i] = rand();
@@ -101,7 +100,7 @@ void cleanup()
 {
     free(originalData);
     free(dataForSorting);
-    free(temporaryData);
+    free(comparisionData);
 }
 
 void prepareArrayForSorting(int data_size)
@@ -129,12 +128,52 @@ void benchmarkOneThreadStdQsort(int data_size)
     // get time taken
     oneThreadStdQsortTime = printTimeElapsed(start, "benchmarkOneThreadStdQsort");
 
-#if DEBUG != 0
-    // copy the qsort answer to the temporaryData for the merge sort to compare
-    memcpy(temporaryData, dataForSorting, sizeof(int) * data_size);
-#endif
-
     print_result(data_size, "benchmarkOneThreadStdQsort");
+
+#if DEBUG != 0
+    comparisionData = (int*) malloc(sizeof(int) * data_size);
+    // copy the qsort answer to the comparisionData for the merge sort to compare
+    memcpy(comparisionData, dataForSorting, sizeof(int) * data_size);
+#endif
+}
+
+void mergeSortCombine(int left, int mid, int right)
+{
+    // merge two lists
+    int pa = left, pb = mid, idx = 0;
+    int *tmpData = (int*) malloc(sizeof(int) * (right - left));
+    while(pa < mid && pb < right) {
+        if(dataForSorting[pa] <= dataForSorting[pb])
+            tmpData[idx++] = dataForSorting[pa++];
+        else
+            tmpData[idx++] = dataForSorting[pb++];
+    }
+
+    while(pa < mid)
+        tmpData[idx++] = dataForSorting[pa++];
+    while(pb < right)
+        tmpData[idx++] = dataForSorting[pb++];
+
+    // TODO: wait for mutex lock
+
+    for(int i = 0; i < right - left; i++)
+        dataForSorting[left + i] = tmpData[i];
+
+    free(tmpData);
+}
+
+// [left, right)
+void mergeSort(int left, int right)
+{
+    // printf("%d %d\n", left, right);
+    if(right - left < 2)
+        return;
+
+    int mid = (left + right) / 2;
+    mergeSort(left, mid);
+    mergeSort(mid, right);
+    // printf("%d %d %d\n", left, mid, right);
+    mergeSortCombine(left, mid, right);
 }
 
 void benchmarkOneThreadMergeSort(int data_size)
@@ -145,17 +184,18 @@ void benchmarkOneThreadMergeSort(int data_size)
     // start merge sort!
     clock_t start = clock();
 
+    mergeSort(0, data_size);
+
     // get time taken
     oneThreadMergeSortTime = printTimeElapsed(start, "benchmarkOneThreadMergeSort");
 
+    print_result(data_size, "benchmarkOneThreadMergeSort");
 #if DEBUG != 0
     // check merge sort solution against the qsort solution
     // ensure merge sort is correct
     for(int i = 0; i < data_size; i++)
-        assert(dataForSorting[i] == temporaryData[i]);
+        assert(dataForSorting[i] == comparisionData[i]);
 #endif
-
-    print_result(data_size, "benchmarkOneThreadMergeSort");
 }
 
 int main(int argc, char **argv)
