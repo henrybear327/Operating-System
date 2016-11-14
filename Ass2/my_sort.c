@@ -16,6 +16,7 @@
 2 - messages, asserts, merge sort correctness check, and array data
 */
 #define DEBUG 1
+#define TEST_THRESHOLD 1
 
 // define terminal colorful text output
 #define NONE "\033[m"
@@ -334,6 +335,14 @@ int main(int argc, char **argv)
     benchmarkOneThreadMergeSort(data_size);
 
     benchmarkMultiThreadMergeSort(data_size);
+
+#if TEST_THRESHOLD == 1
+    for(int i = 0; i < 25 && (1 << i) <= data_size; i++) {
+        threshold = (1 << i);
+        printf(RED "Test threshold = %d\n" NONE, threshold);
+        benchmarkMultiThreadMergeSort(data_size);
+    }
+#endif
 
     cleanup();
 
