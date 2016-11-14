@@ -245,10 +245,10 @@ void multiThreadMergeSortDriver(int left, int right)
 
 void benchmarkMultiThreadMergeSort(int data_size)
 {
+    assert(threshold > 0);
+
     // prepare the array for sorting
     prepareArrayForSorting(data_size);
-
-    assert(threshold > 0);
 
     // start merge sort!
     clock_t start = clock();
@@ -260,14 +260,26 @@ void benchmarkMultiThreadMergeSort(int data_size)
 
     print_result(data_size, "benchmarkMultiThreadMergeSort");
 
-    // get improvement data
-
 #if DEBUG != 0
     // check multi-thread merge sort solution against the qsort solution
     // ensure merge sort is correct
     for(int i = 0; i < data_size; i++)
         assert(dataForSorting[i] == comparisionData[i]);
 #endif
+
+    // get improvement data
+    double improvementOverQsort = oneThreadStdQsortTime == 0 ? 0 : (double) (oneThreadStdQsortTime -  multiThreadMergeSortTime) / oneThreadStdQsortTime;
+    double improvementOverMergeSort = oneThreadMergeSortTime == 0 ? oneThreadMergeSortTime : (double) (oneThreadMergeSortTime - multiThreadMergeSortTime) / oneThreadMergeSortTime;
+
+    printf(CYAN "Multi-threaded merge sort (threshold %d) is:\n"
+           "%.02f%% %s than single-threaded qsort (%d.%03d vs %d.%03d), and \n"
+           "%.02f%% %s than single-threaded merge sort (%d.%03d vs %d.%03d).\n\n" NONE,
+           threshold,
+            improvementOverQsort * 100, improvementOverQsort >= 0 ? "faster" : "slower",
+            multiThreadMergeSortTime / 1000, multiThreadMergeSortTime % 1000, oneThreadStdQsortTime / 1000, oneThreadStdQsortTime % 1000,
+            improvementOverMergeSort * 100, improvementOverMergeSort >= 0 ? "faster" : "slower",
+            multiThreadMergeSortTime / 1000, multiThreadMergeSortTime % 1000, oneThreadMergeSortTime / 1000, oneThreadMergeSortTime % 1000
+            );
 }
 
 
@@ -304,7 +316,7 @@ int main(int argc, char **argv)
 
     cleanup();
 
-    printTimeElapsed(start, "the entire program");
+    printTimeElapsed(start, "entire program");
 
     return 0;
 }
