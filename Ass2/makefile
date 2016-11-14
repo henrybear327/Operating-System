@@ -9,9 +9,11 @@ test:
 	gcc -Wall -Wextra -std=c99 -O2 -pthread merge_sort_tweak.c -o merge_sort_tweak
 
 	rm -f myqsort
-	time ./my_sort 10 10000000 > myqsort
-	rm -f myqsort
-
 	rm -f mymerge
-	time ./merge_sort_tweak 10 10000000 > mymerge
+	time ./my_sort 10 11 > myqsort
+	time ./merge_sort_tweak 10 11 > mymerge
+
+	diff -u myqsort mymerge
+
+	rm -f myqsort
 	rm -f mymerge

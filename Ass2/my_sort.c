@@ -89,15 +89,20 @@ void print_result(int data_size)
     if (mode == 0) {
         for (int i = 0; i < data_size; i++)
             printf("%d%c", resultAfterSorting[i], i == data_size - 1 ? '\n' : ' ');
+        for (int i = 1; i < data_size; i++)
+            distanceSum += resultAfterSorting[i] - resultAfterSorting[i - 1];
+        printf(
+            GREEN "The sum of distance between consecutive numbers is %d = %d\n" NONE,
+            distanceSum, resultAfterSorting[data_size - 1] - resultAfterSorting[0]);
     } else {
         for (int i = 0; i < data_size; i++)
             printf("%d%c", dataForSorting[i], i == data_size - 1 ? '\n' : ' ');
+        for (int i = 1; i < data_size; i++)
+            distanceSum += dataForSorting[i] - dataForSorting[i - 1];
+        printf(
+            GREEN "The sum of distance between consecutive numbers is %d = %d\n" NONE,
+            distanceSum, dataForSorting[data_size - 1] - dataForSorting[0]);
     }
-    for (int i = 1; i < data_size; i++)
-        distanceSum += resultAfterSorting[i] - resultAfterSorting[i - 1];
-    printf(
-        GREEN "The sum of distance between consecutive numbers is %d = %d\n" NONE,
-        distanceSum, resultAfterSorting[data_size - 1] - resultAfterSorting[0]);
 }
 
 void cleanup()

@@ -57,14 +57,12 @@ void merge(int i, int j)
         newa[newai++] = a[bi++];
     }
 
-    /*
     for (ai = 0; ai < (j - i + 1); ai++) {
         // printf("%d = %d\n", i + ai, newa[ai]);
         a[i + ai] = newa[ai];
     }
-    */
 
-    memcpy(a + i, newa, sizeof(int) * (j - i + 1));
+    // memcpy(a + i, newa, sizeof(int) * (j - i + 1));
 }
 
 void *merge_sort(void *a)
@@ -161,7 +159,35 @@ int main(int argc, char **argv)
     pthread_join(tidl, NULL);
     pthread_join(tidr, NULL);
 
-    merge(0, data_size - 1);
+    //print_result(data_size);
+
+    //merge(0, data_size - 1);
+
+    int mid = data_size / 2;
+    int ai = 0;
+    int bi = mid + 1;
+
+    int newai = 0;
+
+    while (ai <= mid && bi <= data_size - 1) {
+        if (a[ai] > a[bi])
+            newa[newai++] = a[bi++];
+        else
+            newa[newai++] = a[ai++];
+    }
+
+    while (ai <= mid) {
+        newa[newai++] = a[ai++];
+    }
+
+    while (bi <= data_size - 1) {
+        newa[newai++] = a[bi++];
+    }
+
+    for (ai = 0; ai < data_size; ai++) {
+        // printf("%d = %d\n", i + ai, newa[ai]);
+        a[ai] = newa[ai];
+    }
 
     print_result(data_size);
 
