@@ -190,7 +190,6 @@ void benchmarkOneThreadMergeSort(int data_size)
     oneThreadMergeSortTime =
         printTimeElapsed(start, "benchmarkOneThreadMergeSort");
 
-    print_result(data_size, "benchmarkOneThreadMergeSort");
 #if DEBUG != 0
     // check merge sort solution against the qsort solution
     // ensure merge sort is correct
@@ -198,6 +197,8 @@ void benchmarkOneThreadMergeSort(int data_size)
         assert(dataForSorting[i] == comparisionData[i]);
     printf(GREEN "The sorted result is verified - correct!\n" NONE);
 #endif
+
+    print_result(data_size, "benchmarkOneThreadMergeSort");
 }
 
 struct sorting_parameter { // [l, r)
@@ -263,8 +264,6 @@ void benchmarkMultiThreadMergeSort(int data_size)
     int multiThreadMergeSortTime =
         printTimeElapsed(start, "benchmarkMultiThreadMergeSort");
 
-    print_result(data_size, "benchmarkMultiThreadMergeSort");
-
 #if DEBUG != 0
     // check multi-thread merge sort solution against the qsort solution
     // ensure merge sort is correct
@@ -272,6 +271,8 @@ void benchmarkMultiThreadMergeSort(int data_size)
         assert(dataForSorting[i] == comparisionData[i]);
     printf(GREEN "The sorted result is verified - correct!\n" NONE);
 #endif
+
+    print_result(data_size, "benchmarkMultiThreadMergeSort");
 
     // get improvement data
     double improvementOverQsort =
