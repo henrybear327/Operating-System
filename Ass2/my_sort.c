@@ -12,8 +12,8 @@
 
 /*
 0 - production mode
-1 - only messages and asserts, no array data
-2 - messages, asserts, and array data
+1 - only messages, asserts, and merge sort correctness check, no array data
+2 - messages, asserts, merge sort correctness check, and array data
 */
 #define DEBUG 1
 
@@ -27,6 +27,8 @@ int *originalData, *temporaryData, *dataForSorting;
 
 // obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
+
+int oneThreadMergeSortTime;
 
 struct sorting_parameter { // [l, r)
     int left_bound, right_bound;
@@ -121,11 +123,39 @@ void benchmarkOneThreadStdQsort(int data_size)
     clock_t start = clock();
 
     qsort(dataForSorting, data_size, sizeof(int), cmp);
-    totalDistanceCorrectAnswer = dataForSorting[data_size - 1] - dataForSorting[0];
+    totalDistanceCorrectAnswer =
+        dataForSorting[data_size - 1] - dataForSorting[0];
 
+    // get time taken
     oneThreadStdQsortTime = printTimeElapsed(start, "benchmarkOneThreadStdQsort");
 
+#if DEBUG != 0
+    // copy the qsort answer to the temporaryData for the merge sort to compare
+    memcpy(temporaryData, dataForSorting, sizeof(int) * data_size);
+#endif
+
     print_result(data_size, "benchmarkOneThreadStdQsort");
+}
+
+void benchmarkOneThreadMergeSort(int data_size)
+{
+    // prepare the array for sorting
+    prepareArrayForSorting(data_size);
+
+    // start merge sort!
+    clock_t start = clock();
+
+    // get time taken
+    oneThreadMergeSortTime = printTimeElapsed(start, "benchmarkOneThreadMergeSort");
+
+#if DEBUG != 0
+    // check merge sort solution against the qsort solution
+    // ensure merge sort is correct
+    for(int i = 0; i < data_size; i++)
+        assert(dataForSorting[i] == temporaryData[i]);
+#endif
+
+    print_result(data_size, "benchmarkOneThreadMergeSort");
 }
 
 int main(int argc, char **argv)
@@ -150,9 +180,12 @@ int main(int argc, char **argv)
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
 
-    // Run the baseline sorting algorithm -- qsort on 1 thread.
-    // Set correct comparing data
+    // Run the baseline sorting algorithm 1 -- qsort on 1 thread. (Record time)
+    // Set correct comparing data (total diff)
     benchmarkOneThreadStdQsort(data_size);
+
+    // Run the baseline sorting algorithm 2 -- merge sort on 1 thread. (Record time)
+    benchmarkOneThreadMergeSort(data_size);
 
     cleanup();
 

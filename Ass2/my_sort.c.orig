@@ -25,13 +25,26 @@
 
 int *originalData, *temporaryData, *dataForSorting;
 
-int oneThreadStdQsortTime;
+// obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
+int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 
 struct sorting_parameter { // [l, r)
   int left_bound, right_bound;
 };
 
+inline int printTimeElapsed(int start, char *string) {
+  clock_t diff = clock() - start;
+  int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
+  // user + system
+  printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string,
+         milliseconds / 1000, milliseconds % 1000);
+
+  return milliseconds;
+}
+
 void generateNumbersForSorting(int seed, int size) {
+  clock_t start = clock();
+
 #if DEBUG != 0
   printf(GREEN "Generating %d numbers with seed %d for sorting...\n" NONE, size,
          seed);
@@ -47,6 +60,7 @@ void generateNumbersForSorting(int seed, int size) {
 
   printf(GREEN "Generated %d numbers with seed %d for sorting...\n" NONE, size,
          seed);
+  printTimeElapsed(start, "generator");
   printf("\n");
 
 #if DEBUG == 2
@@ -84,16 +98,6 @@ void cleanup() {
   free(temporaryData);
 }
 
-inline int printTimeElapsed(int start, char *string) {
-  clock_t diff = clock() - start;
-  int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
-  // user + system
-  printf(CYAN "Total time taken by %s is %d.%03d second(s)\n" NONE, string,
-         milliseconds / 1000, milliseconds % 1000);
-
-  return milliseconds;
-}
-
 void prepareArrayForSorting(int data_size) {
   memcpy(dataForSorting, originalData, sizeof(int) * data_size);
 }
@@ -108,9 +112,12 @@ void benchmarkOneThreadStdQsort(int data_size) {
   clock_t start = clock();
 
   qsort(dataForSorting, data_size, sizeof(int), cmp);
+  totalDistanceCorrectAnswer =
+      dataForSorting[data_size - 1] - dataForSorting[0];
 
   oneThreadStdQsortTime = printTimeElapsed(start, "benchmarkOneThreadStdQsort");
-  printf("\n");
+
+  print_result(data_size, "benchmarkOneThreadStdQsort");
 }
 
 int main(int argc, char **argv) {
@@ -134,11 +141,9 @@ int main(int argc, char **argv) {
   // generate numbers for sorting
   generateNumbersForSorting(rand_seed, data_size);
 
-  // Test the baseline sorting algorithm, qsort on 1 thread.
+  // Run the baseline sorting algorithm -- qsort on 1 thread.
+  // Set correct comparing data
   benchmarkOneThreadStdQsort(data_size);
-
-  // print the result
-  print_result(data_size, "benchmarkOneThreadStdQsort");
 
   cleanup();
 
