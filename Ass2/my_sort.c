@@ -131,7 +131,7 @@ void benchmarkOneThreadStdQsort(int data_size)
     print_result(data_size, "benchmarkOneThreadStdQsort");
 
 #if DEBUG != 0
-    comparisionData = (int*) malloc(sizeof(int) * data_size);
+    comparisionData = (int *)malloc(sizeof(int) * data_size);
     // copy the qsort answer to the comparisionData for the merge sort to compare
     memcpy(comparisionData, dataForSorting, sizeof(int) * data_size);
 #endif
@@ -143,21 +143,21 @@ void mergeSortCombine(int left, int mid, int right)
     int pa = left, pb = mid;
 
     int idx = left;
-    while(pa < mid && pb < right) {
-        if(dataForSorting[pa] <= dataForSorting[pb])
+    while (pa < mid && pb < right) {
+        if (dataForSorting[pa] <= dataForSorting[pb])
             tmpData[idx++] = dataForSorting[pa++];
         else
             tmpData[idx++] = dataForSorting[pb++];
     }
 
-    while(pa < mid)
+    while (pa < mid)
         tmpData[idx++] = dataForSorting[pa++];
-    while(pb < right)
+    while (pb < right)
         tmpData[idx++] = dataForSorting[pb++];
 
     // TODO: wait for mutex lock
 
-    for(int i = 0; i < right - left; i++)
+    for (int i = 0; i < right - left; i++)
         // dataForSorting[left + i] = tmpData[i];
         dataForSorting[left + i] = tmpData[left + i];
 }
@@ -166,7 +166,7 @@ void mergeSortCombine(int left, int mid, int right)
 void mergeSort(int left, int right)
 {
     // printf("%d %d\n", left, right);
-    if(right - left < 2)
+    if (right - left < 2)
         return;
 
     int mid = (left + right) / 2;
@@ -187,13 +187,14 @@ void benchmarkOneThreadMergeSort(int data_size)
     mergeSort(0, data_size);
 
     // get time taken
-    oneThreadMergeSortTime = printTimeElapsed(start, "benchmarkOneThreadMergeSort");
+    oneThreadMergeSortTime =
+        printTimeElapsed(start, "benchmarkOneThreadMergeSort");
 
     print_result(data_size, "benchmarkOneThreadMergeSort");
 #if DEBUG != 0
     // check merge sort solution against the qsort solution
     // ensure merge sort is correct
-    for(int i = 0; i < data_size; i++)
+    for (int i = 0; i < data_size; i++)
         assert(dataForSorting[i] == comparisionData[i]);
     printf(GREEN "The sorted result is verified - correct!\n" NONE);
 #endif
@@ -205,7 +206,7 @@ struct sorting_parameter { // [l, r)
 
 void *multiThreadMergeSort(void *argument)
 {
-    struct sorting_parameter* param = (struct sorting_parameter*)argument;
+    struct sorting_parameter *param = (struct sorting_parameter *)argument;
     int left = param->left_bound;
     int right = param->right_bound;
 
@@ -219,17 +220,19 @@ void *multiThreadMergeSort(void *argument)
 void multiThreadMergeSortDriver(int left, int right)
 {
     // printf("%d %d\n", left, right);
-    if(right - left < 2)
+    if (right - left < 2)
         return;
 
     int mid = (left + right) / 2;
-    if(right - left == threshold) {
+    if (right - left == threshold) {
         pthread_t mythread;
         struct sorting_parameter param;
         param.left_bound = left;
         param.right_bound = right;
         if (pthread_create(&mythread, NULL, multiThreadMergeSort, &param) != 0) {
-            printf(RED "Error creating thread under threshold %d. (left = %d, right = %d)." NONE, threshold, left, right);
+            printf(RED "Error creating thread under threshold %d. (left = %d, right "
+                   "= %d)." NONE,
+                   threshold, left, right);
             perror("Error creating thread");
 
             abort();
@@ -257,33 +260,45 @@ void benchmarkMultiThreadMergeSort(int data_size)
     multiThreadMergeSortDriver(0, data_size);
 
     // get time taken
-    int multiThreadMergeSortTime = printTimeElapsed(start, "benchmarkMultiThreadMergeSort");
+    int multiThreadMergeSortTime =
+        printTimeElapsed(start, "benchmarkMultiThreadMergeSort");
 
     print_result(data_size, "benchmarkMultiThreadMergeSort");
 
 #if DEBUG != 0
     // check multi-thread merge sort solution against the qsort solution
     // ensure merge sort is correct
-    for(int i = 0; i < data_size; i++)
+    for (int i = 0; i < data_size; i++)
         assert(dataForSorting[i] == comparisionData[i]);
     printf(GREEN "The sorted result is verified - correct!\n" NONE);
 #endif
 
     // get improvement data
-    double improvementOverQsort = oneThreadStdQsortTime == 0 ? 0 : (double) (oneThreadStdQsortTime -  multiThreadMergeSortTime) / oneThreadStdQsortTime;
-    double improvementOverMergeSort = oneThreadMergeSortTime == 0 ? oneThreadMergeSortTime : (double) (oneThreadMergeSortTime - multiThreadMergeSortTime) / oneThreadMergeSortTime;
+    double improvementOverQsort =
+        oneThreadStdQsortTime == 0
+        ? 0
+        : (double)(oneThreadStdQsortTime - multiThreadMergeSortTime) /
+        oneThreadStdQsortTime;
+    double improvementOverMergeSort =
+        oneThreadMergeSortTime == 0
+        ? oneThreadMergeSortTime
+        : (double)(oneThreadMergeSortTime - multiThreadMergeSortTime) /
+        oneThreadMergeSortTime;
 
-    printf(CYAN "Multi-threaded merge sort (threshold %d) is:\n"
+    printf(CYAN
+           "Multi-threaded merge sort (threshold %d) is:\n"
            "%.02f%% %s than single-threaded qsort (%d.%03d vs %d.%03d), and \n"
-           "%.02f%% %s than single-threaded merge sort (%d.%03d vs %d.%03d).\n\n" NONE,
-           threshold,
-            improvementOverQsort * 100, improvementOverQsort >= 0 ? "faster" : "slower",
-            multiThreadMergeSortTime / 1000, multiThreadMergeSortTime % 1000, oneThreadStdQsortTime / 1000, oneThreadStdQsortTime % 1000,
-            improvementOverMergeSort * 100, improvementOverMergeSort >= 0 ? "faster" : "slower",
-            multiThreadMergeSortTime / 1000, multiThreadMergeSortTime % 1000, oneThreadMergeSortTime / 1000, oneThreadMergeSortTime % 1000
-            );
+           "%.02f%% %s than single-threaded merge sort (%d.%03d vs "
+           "%d.%03d).\n\n" NONE,
+           threshold, improvementOverQsort * 100,
+           improvementOverQsort >= 0 ? "faster" : "slower",
+           multiThreadMergeSortTime / 1000, multiThreadMergeSortTime % 1000,
+           oneThreadStdQsortTime / 1000, oneThreadStdQsortTime % 1000,
+           improvementOverMergeSort * 100,
+           improvementOverMergeSort >= 0 ? "faster" : "slower",
+           multiThreadMergeSortTime / 1000, multiThreadMergeSortTime % 1000,
+           oneThreadMergeSortTime / 1000, oneThreadMergeSortTime % 1000);
 }
-
 
 int main(int argc, char **argv)
 {
@@ -311,7 +326,8 @@ int main(int argc, char **argv)
     // Set correct comparing data (total diff)
     benchmarkOneThreadStdQsort(data_size);
 
-    // Run the baseline sorting algorithm 2 -- merge sort on 1 thread. (Record time)
+    // Run the baseline sorting algorithm 2 -- merge sort on 1 thread. (Record
+    // time)
     benchmarkOneThreadMergeSort(data_size);
 
     benchmarkMultiThreadMergeSort(data_size);
