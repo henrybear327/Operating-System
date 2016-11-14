@@ -19,11 +19,11 @@
 #define TEST_THRESHOLD 1
 
 #if TEST_THRESHOLD == 1
-const int thresholdMaxPower = 25;
+#define THRESHOLD_MAX_POWER 25
 int thresholdPower;
 struct {
     double fasterThanQsort, fasterThanMergeSort;
-} improvementData[thresholdMaxPower];
+} improvementData[THRESHOLD_MAX_POWER];
 #endif
 
 // define terminal colorful text output
@@ -350,7 +350,7 @@ int main(int argc, char **argv)
     benchmarkMultiThreadMergeSort(data_size);
 
 #if TEST_THRESHOLD == 1
-    for(int i = 0; i < thresholdMaxPower && (1 << i) <= data_size; i++) {
+    for(int i = 0; i < THRESHOLD_MAX_POWER && (1 << i) <= data_size; i++) {
         thresholdPower = i;
         threshold = (1 << i);
         printf(RED "Test threshold = %d\n" NONE, threshold);
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
     }
 
     printf(GREEN "Improvement list:\n" NONE);
-    for(int i = 0; i < thresholdMaxPower && (1 << i) <= data_size; i++) {
+    for(int i = 0; i < THRESHOLD_MAX_POWER && (1 << i) <= data_size; i++) {
         printf(GREEN "%2d %.02f %.02f\n" NONE, i, improvementData[i].fasterThanQsort * 100, improvementData[i].fasterThanMergeSort * 100);
     }
 #endif
