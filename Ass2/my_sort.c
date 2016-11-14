@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <time.h>
+
 #define DEBUG 1
 
 // define terminal colorful text output
@@ -70,6 +72,8 @@ void cleanup()
 
 int main(int argc, char **argv)
 {
+    clock_t start = clock(), diff;
+
     if (argc != 3) { // check if all arguments are given
         // fprintf(stderr, "Insufficient arguments");
         printf(RED "Insufficient arguments! Program will terminate now\n" NONE);
@@ -88,6 +92,10 @@ int main(int argc, char **argv)
     print_result(data_size);
 
     cleanup();
+
+    diff = clock() - start;
+    int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
+    printf(CYAN "Time taken (user + system) %d.%03d second(s)" NONE, milliseconds/1000, milliseconds%1000);
 
     return 0;
 }
