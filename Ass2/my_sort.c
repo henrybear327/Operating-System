@@ -10,6 +10,11 @@
 
 #include <time.h>
 
+/*
+0 - production mode
+1 - only messages and asserts, no array data
+2 - messages, asserts, and array data
+*/
 #define DEBUG 1
 
 // define terminal colorful text output
@@ -20,38 +25,58 @@
 
 int *originalData, *temporaryData, *dataForSorting;
 
-int oneThreadStdQsortTime;
+// obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
+int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 
 struct sorting_parameter { // [l, r)
     int left_bound, right_bound;
 };
 
+inline int printTimeElapsed(int start, char *string)
+{
+    clock_t diff = clock() - start;
+    int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
+    // user + system
+    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string,
+           milliseconds / 1000, milliseconds % 1000);
+
+    return milliseconds;
+}
+
 void generateNumbersForSorting(int seed, int size)
 {
+    clock_t start = clock();
+
+#if DEBUG != 0
     printf(GREEN "Generating %d numbers with seed %d for sorting...\n" NONE, size,
            seed);
+#endif
 
     srand(seed);
     originalData = (int *)malloc(sizeof(int) * size);
     dataForSorting = (int *)malloc(sizeof(int) * size);
+    temporaryData = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i < size; i++)
         originalData[i] = rand();
 
-#if DEBUG == 1
+    printf(GREEN "Generated %d numbers with seed %d for sorting...\n" NONE, size,
+           seed);
+    printTimeElapsed(start, "generator");
+    printf("\n");
+
+#if DEBUG == 2
     for (int i = 0; i < size; i++)
         printf("%d%c", originalData[i], i == size - 1 ? '\n' : ' ');
     printf("\n");
 #endif
-
-    temporaryData = (int *)malloc(sizeof(int) * size);
 }
 
 void print_result(int data_size, char *string)
 {
     int distanceSum = 0;
 
-#if DEBUG == 1
+#if DEBUG == 2
     printf(GREEN "The sorted array after doing %s is...\n" NONE, string);
     for (int i = 0; i < data_size; i++)
         printf("%d%c", dataForSorting[i], i == data_size - 1 ? '\n' : ' ');
@@ -59,9 +84,10 @@ void print_result(int data_size, char *string)
 
     for (int i = 1; i < data_size; i++)
         distanceSum += dataForSorting[i] - dataForSorting[i - 1];
-    printf(GREEN
-           "The sum of distance between consecutive numbers is %d\n" NONE,
-           distanceSum);
+    printf(
+        GREEN
+        "The sum of distance between consecutive numbers after %s is %d\n" NONE,
+        string, distanceSum);
 
     printf("\n");
 #if DEBUG == 1
@@ -76,14 +102,9 @@ void cleanup()
     free(temporaryData);
 }
 
-inline int printTimeElapsed(int start, char* string)
+void prepareArrayForSorting(int data_size)
 {
-    clock_t diff = clock() - start;
-    int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
-    //user + system
-    printf(CYAN "Total time taken by %s is %d.%03d second(s)\n" NONE, string, milliseconds/1000, milliseconds%1000);
-
-    return milliseconds;
+    memcpy(dataForSorting, originalData, sizeof(int) * data_size);
 }
 
 int cmp(const void *a, const void *b)
@@ -91,26 +112,27 @@ int cmp(const void *a, const void *b)
     return *((int *)a) - *((int *)b);
 }
 
-void prepareArrayForSorting(int data_size)
-{
-    memcpy(dataForSorting, originalData, sizeof(int) * data_size);
-}
-
 void benchmarkOneThreadStdQsort(int data_size)
 {
     // prepare the array for sorting
     prepareArrayForSorting(data_size);
 
+    // start qsort!
     clock_t start = clock();
 
-    oneThreadStdQsortTime = printTimeElapsed(start, "qsort");
-    printf("\n");
+    qsort(dataForSorting, data_size, sizeof(int), cmp);
+    totalDistanceCorrectAnswer = dataForSorting[data_size - 1] - dataForSorting[0];
+
+    oneThreadStdQsortTime = printTimeElapsed(start, "benchmarkOneThreadStdQsort");
+
+    print_result(data_size, "benchmarkOneThreadStdQsort");
 }
 
 int main(int argc, char **argv)
 {
-#if DEBUG == 1
-    printf(RED "********The debug mode is ON!********\n\n\n" NONE);
+#if DEBUG != 0
+    printf(RED "********The debug mode is ON (mode %d)!********\n\n\n" NONE,
+           DEBUG);
 #endif
     clock_t start = clock();
 
@@ -128,11 +150,9 @@ int main(int argc, char **argv)
     // generate numbers for sorting
     generateNumbersForSorting(rand_seed, data_size);
 
-    // Test the baseline sorting algorithm, qsort on 1 thread.
+    // Run the baseline sorting algorithm -- qsort on 1 thread.
+    // Set correct comparing data
     benchmarkOneThreadStdQsort(data_size);
-
-    // print the result
-    print_result(data_size, "benchmarkOneThreadStdQsort");
 
     cleanup();
 
