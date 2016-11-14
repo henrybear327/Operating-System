@@ -23,7 +23,7 @@
 #define GREEN "\033[0;32;32m"
 #define CYAN "\033[0;36m"
 
-int *originalData, *dataForSorting, *comparisionData;
+int *originalData, *dataForSorting, *comparisionData, *tmpData;
 
 // obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
@@ -57,6 +57,7 @@ void generateNumbersForSorting(int seed, int size)
     srand(seed);
     originalData = (int *)malloc(sizeof(int) * size);
     dataForSorting = (int *)malloc(sizeof(int) * size);
+    tmpData = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i < size; i++)
         originalData[i] = rand();
@@ -101,6 +102,7 @@ void cleanup()
     free(originalData);
     free(dataForSorting);
     free(comparisionData);
+    free(tmpData);
 }
 
 void prepareArrayForSorting(int data_size)
@@ -140,8 +142,9 @@ void benchmarkOneThreadStdQsort(int data_size)
 void mergeSortCombine(int left, int mid, int right)
 {
     // merge two lists
-    int pa = left, pb = mid, idx = 0;
-    int *tmpData = (int*) malloc(sizeof(int) * (right - left));
+    int pa = left, pb = mid;
+
+    int idx = left;
     while(pa < mid && pb < right) {
         if(dataForSorting[pa] <= dataForSorting[pb])
             tmpData[idx++] = dataForSorting[pa++];
@@ -157,9 +160,8 @@ void mergeSortCombine(int left, int mid, int right)
     // TODO: wait for mutex lock
 
     for(int i = 0; i < right - left; i++)
-        dataForSorting[left + i] = tmpData[i];
-
-    free(tmpData);
+        // dataForSorting[left + i] = tmpData[i];
+        dataForSorting[left + i] = tmpData[left + i];
 }
 
 // [left, right)
