@@ -44,7 +44,8 @@ inline int printTimeElapsed(struct timeval start, char *string)
     gettimeofday(&end, NULL);
 
     int diff = 1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
-    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string, diff/1000000, diff/1000%1000);
+    diff /= 1000;
+    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string, diff/1000, diff%1000);
 
     return diff;
 }
