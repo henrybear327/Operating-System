@@ -8,9 +8,9 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <time.h>
-#include <semaphore.h>
 #include <math.h>
+#include <semaphore.h>
+#include <time.h>
 
 #include <sys/time.h>
 
@@ -43,9 +43,11 @@ inline int printTimeElapsed(struct timeval start, char *string)
     struct timeval end;
     gettimeofday(&end, NULL);
 
-    int diff = 1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
+    int diff =
+        1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
     diff /= 1000;
-    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string, diff/1000, diff%1000);
+    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string,
+           diff / 1000, diff % 1000);
 
     return diff;
 }
@@ -367,13 +369,11 @@ void benchmarkMultiThreadMergeSort(int data_size)
     double improvementOverQsort =
         oneThreadStdQsortTime == 0
         ? 0
-        : (double)(multiThreadMergeSortTime) /
-        oneThreadStdQsortTime;
+        : (double)oneThreadStdQsortTime / multiThreadMergeSortTime;
     double improvementOverMergeSort =
         oneThreadMergeSortTime == 0
         ? oneThreadMergeSortTime
-        : (double)(multiThreadMergeSortTime) /
-        oneThreadMergeSortTime;
+        : (double)oneThreadMergeSortTime / multiThreadMergeSortTime;
 
     printf(CYAN
            "Multi-threaded merge sort (threshold %d) is:\n"

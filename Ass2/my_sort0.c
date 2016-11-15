@@ -416,9 +416,10 @@ int main(int argc, char **argv)
 
     struct timeval ee;
     gettimeofday(&ee, NULL);
-    unsigned long diff = 1000000 * (ee.tv_sec - ss.tv_sec) + ee.tv_usec - ss.tv_usec;
-    printf(CYAN "Muitithread sorting takes %ld.%03ld\ns" NONE, diff/1000000, diff/1000%1000);
-
+    unsigned long diff =
+        1000000 * (ee.tv_sec - ss.tv_sec) + ee.tv_usec - ss.tv_usec;
+    printf(CYAN "Muitithread sorting takes %ld.%03ld\ns" NONE, diff / 1000000,
+           diff / 1000 % 1000);
 
     // cleanup();
 

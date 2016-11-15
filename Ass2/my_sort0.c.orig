@@ -1,27 +1,24 @@
+#include <assert.h>
+#include <errno.h>
+#include <math.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <assert.h>
-
-#include <errno.h>
-#include <pthread.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
-#include <math.h>
-#include <semaphore.h>
-#include <time.h>
-
-#include <sys/time.h>
-
 /*
-0 - production mode
-1 - only messages, asserts, and merge sort correctness check, no array data
-2 - messages, asserts, merge sort correctness check, and array data
+0 - Production mode
+1 - Only messages, asserts, and sorting result correctness checks are performed.
+2 - Messages, asserts, sorting result correctness checks, and print out all
+array data
 */
 #define DEBUG 1
 
-int threshold;
+#define MAX_PROCESSER 16
 
 // define terminal colorful text output
 #define NONE "\033[m"
@@ -29,31 +26,26 @@ int threshold;
 #define GREEN "\033[0;32;32m"
 #define CYAN "\033[0;36m"
 
-#define MAX_PROCESSER 16
+int *originalData, *dataForSorting, *comparisionData, *mergeSortTmpArray;
 
-int *originalData, *dataForSorting, *comparisionData, *tmpData;
-
-// obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
+// obtained by calling benchmarkOneThreadStdQsort()
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 
+// obtained by calling benchmarkOneThreadMergeSort()
 int oneThreadMergeSortTime;
 
-inline int printTimeElapsed(struct timeval start, char *string) {
-  struct timeval end;
-  gettimeofday(&end, NULL);
-
-  int diff =
-      1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
-  diff /= 1000;
+int printTimeElapsed(int start, char *string) {
+  clock_t diff = clock() - start;
+  int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
+  // user + system
   printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE, string,
-         diff / 1000, diff % 1000);
+         milliseconds / 1000, milliseconds % 1000);
 
-  return diff;
+  return milliseconds;
 }
 
 void generateNumbersForSorting(int seed, int size) {
-  struct timeval start;
-  gettimeofday(&start, NULL);
+  clock_t start = clock();
 
 #if DEBUG != 0
   printf(GREEN "Generating %d numbers with seed %d for sorting...\n" NONE, size,
@@ -63,7 +55,6 @@ void generateNumbersForSorting(int seed, int size) {
   srand(seed);
   originalData = (int *)malloc(sizeof(int) * size);
   dataForSorting = (int *)malloc(sizeof(int) * size);
-  tmpData = (int *)malloc(sizeof(int) * size);
 
   for (int i = 0; i < size; i++)
     originalData[i] = rand();
@@ -106,7 +97,6 @@ void cleanup() {
   free(originalData);
   free(dataForSorting);
   free(comparisionData);
-  free(tmpData);
 }
 
 void prepareArrayForSorting(int data_size) {
@@ -120,8 +110,7 @@ void benchmarkOneThreadStdQsort(int data_size) {
   prepareArrayForSorting(data_size);
 
   // start qsort!
-  struct timeval start;
-  gettimeofday(&start, NULL);
+  clock_t start = clock();
 
   qsort(dataForSorting, data_size, sizeof(int), cmp);
   totalDistanceCorrectAnswer =
@@ -140,27 +129,27 @@ void benchmarkOneThreadStdQsort(int data_size) {
 }
 
 void mergeSortCombine(int left, int mid, int right) {
+  // printf("%d %d %d %d\n", left, mid, right, right - left);
+  assert(left < mid && mid < right);
+
   // merge two lists
   int pa = left, pb = mid;
 
   int idx = left;
   while (pa < mid && pb < right) {
     if (dataForSorting[pa] <= dataForSorting[pb])
-      tmpData[idx++] = dataForSorting[pa++];
+      mergeSortTmpArray[idx++] = dataForSorting[pa++];
     else
-      tmpData[idx++] = dataForSorting[pb++];
+      mergeSortTmpArray[idx++] = dataForSorting[pb++];
   }
 
   while (pa < mid)
-    tmpData[idx++] = dataForSorting[pa++];
+    mergeSortTmpArray[idx++] = dataForSorting[pa++];
   while (pb < right)
-    tmpData[idx++] = dataForSorting[pb++];
-
-  // TODO: wait for mutex lock
+    mergeSortTmpArray[idx++] = dataForSorting[pb++];
 
   for (int i = 0; i < right - left; i++)
-    // dataForSorting[left + i] = tmpData[i];
-    dataForSorting[left + i] = tmpData[left + i];
+    dataForSorting[left + i] = mergeSortTmpArray[left + i];
 }
 
 // [left, right)
@@ -172,6 +161,7 @@ void mergeSort(int left, int right) {
   int mid = (left + right) / 2;
   mergeSort(left, mid);
   mergeSort(mid, right);
+
   // printf("%d %d %d\n", left, mid, right);
   mergeSortCombine(left, mid, right);
 }
@@ -179,10 +169,10 @@ void mergeSort(int left, int right) {
 void benchmarkOneThreadMergeSort(int data_size) {
   // prepare the array for sorting
   prepareArrayForSorting(data_size);
+  mergeSortTmpArray = (int *)malloc(sizeof(int) * data_size);
 
   // start merge sort!
-  struct timeval start;
-  gettimeofday(&start, NULL);
+  clock_t start = clock();
 
   mergeSort(0, data_size);
 
@@ -199,58 +189,67 @@ void benchmarkOneThreadMergeSort(int data_size) {
 #endif
 
   print_result(data_size, "benchmarkOneThreadMergeSort");
+
+  free(mergeSortTmpArray);
 }
 
-/********************************************************
-Multi-threaded stuff starts here!
-********************************************************/
+/********************************************************/
+/* Multi-threaded stuff starts here!                    */
+/********************************************************/
 
 pthread_mutex_t mutex;
 
 struct sorting_parameter { // [l, r)
   int left_bound, right_bound;
-  int state; // 0 unused, 1 using, 2 terminated
-  int selfIndex;
+  int segmentSize;
+  int *dataToSort;
 };
 
-int myThreadIndex;
+int myThreadIndex, done;
 pthread_t mythread[MAX_PROCESSER];
 struct sorting_parameter param[MAX_PROCESSER];
 
-int done;
+void multiThreadMerger(int left, int right) // [left, right)
+{
+  // printf("%d %d\n", left, right);
+  if (right - left <= 1)
+    return;
 
-void *multiThreadMergeSort(void *argument) {
+  int mid = (left + right) / 2;
+  multiThreadMerger(left, mid);
+  multiThreadMerger(mid, right);
+
+  // printf("%d %d %d, %d %d %d\n", left, mid, right - 1,
+  // param[left].left_bound, param[mid].left_bound, param[right -
+  // 1].right_bound);
+  mergeSortCombine(param[left].left_bound, param[mid].left_bound,
+                   param[right - 1].right_bound);
+}
+
+void *multiThreadSorting(void *argument) {
   struct sorting_parameter *param = (struct sorting_parameter *)argument;
-  int left = param->left_bound;
-  int right = param->right_bound;
-  int selfIndex = param->selfIndex;
+  int segmentSize = param->segmentSize;
+  int *dataToSort = param->dataToSort;
 
-  fflush(stdout);
+  clock_t start = clock();
 
-  // call the normal mergeSort to do the job!
-  // mergeSort(left, right);
-  qsort(dataForSorting + left, right - left, sizeof(int), cmp);
+  // printf("%p %d %d\n", dataToSort, segmentSize, sizeof(int));
+  qsort(dataToSort, segmentSize, sizeof(int), cmp);
 
-  pthread_mutex_lock(&mutex);
-  done++;
-  pthread_mutex_unlock(&mutex);
+  printTimeElapsed(start, "qsort in thread");
 
   pthread_exit(NULL);
 }
 
-void createSortingThread(int left, int right) {
-  // printf("%d %d\n", left, right);
+void createSortingThread(struct sorting_parameter *arg) {
   pthread_mutex_lock(&mutex);
 
-  param[myThreadIndex].left_bound = left;
-  param[myThreadIndex].right_bound = right;
-  param[myThreadIndex].state = 1;
-  param[myThreadIndex].selfIndex = myThreadIndex;
-  if (pthread_create(&mythread[myThreadIndex], NULL, multiThreadMergeSort,
-                     &param[myThreadIndex]) != 0) {
-    printf(RED "Error creating thread under threshold %d. (left = %d, right "
-               "= %d)." NONE,
-           threshold, left, right);
+  // printf("Create threads: %d %d\n", arg->left_bound, arg->right_bound);
+
+  if (pthread_create(&mythread[myThreadIndex], NULL, multiThreadSorting, arg) !=
+      0) {
+    printf(RED "Error creating thread (left = %d, right = %d).\n" NONE,
+           arg->left_bound, arg->right_bound);
     perror("Error creating thread");
 
     abort();
@@ -261,52 +260,7 @@ void createSortingThread(int left, int right) {
   pthread_mutex_unlock(&mutex);
 }
 
-// [left, right)
-void multiThreadMergeSortCreater(int left, int right) {
-  // printf("%d %d\n", left, right);
-  if (right - left < 2)
-    return;
-
-  int mid = (left + right) / 2;
-
-  //  recursive call until threshold is met
-  if (right - left <= threshold * 2) {
-    // create left
-    createSortingThread(left, mid);
-
-    // create right
-    createSortingThread(mid, right);
-
-    return;
-  } else {
-    multiThreadMergeSortCreater(left, mid);
-    multiThreadMergeSortCreater(mid, right);
-  }
-  // printf("%d %d %d\n", left, mid, right);
-}
-
-void multiThreadMergeSortMerger(int left, int right) {
-  // printf("%d %d\n", left, right);
-  if (right - left < 2)
-    return;
-
-  int mid = (left + right) / 2;
-
-  //  recursive call until threshold is met
-  if (right - left <= threshold * 2) {
-    // printf("%d %d %d\n", left, mid, right);
-    mergeSortCombine(left, mid, right);
-  } else {
-    multiThreadMergeSortMerger(left, mid);
-    multiThreadMergeSortMerger(mid, right);
-    mergeSortCombine(left, mid, right);
-  }
-  // printf("%d %d %d\n", left, mid, right);
-
-  return;
-}
-
-void benchmarkMultiThreadMergeSort(int data_size) {
+void benchmarkMultiThreadMergeSort(int data_size, int threshold) {
   assert(threshold > 0);
 
   // prepare the array for sorting
@@ -319,20 +273,52 @@ void benchmarkMultiThreadMergeSort(int data_size) {
   myThreadIndex = 0;
   done = 0;
 
-  // start merge sort!
-  struct timeval start;
-  gettimeofday(&start, NULL);
+  clock_t start = clock();
 
-  multiThreadMergeSortCreater(0, data_size);
+  // assign struct for sorting
+  int segmentSize = data_size / threshold;
 
-  while (1) {
-    pthread_mutex_lock(&mutex);
-    if (done == myThreadIndex) {
-      multiThreadMergeSortMerger(0, data_size);
-      break;
-    }
-    pthread_mutex_unlock(&mutex);
+  // [left, right)
+  param[0].left_bound = 0;
+  param[0].right_bound = segmentSize;
+  param[0].right_bound =
+      param[0].right_bound > data_size ? data_size : param[0].right_bound;
+  param[0].segmentSize = param[0].right_bound - param[0].left_bound;
+  param[0].dataToSort = dataForSorting + param[0].left_bound;
+  for (int i = 1; i < threshold; i++) {
+    param[i].left_bound = param[i - 1].right_bound;
+    param[i].right_bound = param[i - 1].right_bound + segmentSize;
+    if (threshold - 1 == i)
+      param[i].right_bound = data_size;
+    param[i].segmentSize = param[i].right_bound - param[i].left_bound;
+    param[i].dataToSort = dataForSorting + param[i].left_bound;
   }
+
+  // create threads for sorting
+  for (int i = 0; i < threshold; i++) {
+    createSortingThread(&param[i]);
+    // printf("%d: %d %d %d\n", i, param[i].left_bound, param[i].right_bound,
+    // param[i].segmentSize);
+  }
+
+  // wait for sorting to be done
+  for (int i = 0; i < threshold; i++) {
+    if (pthread_join(mythread[i], NULL)) { // pthread_join force the main
+      // process to wait for mythread to
+      // finish
+      printf(RED "Error joining thread %d\n", i);
+      perror("Joining threads failed");
+      abort();
+    }
+  }
+
+  printTimeElapsed(start, "multithread sorting");
+
+  // merge
+  clock_t mergeStart = clock();
+  printf("threshold %d\n", threshold);
+  multiThreadMerger(0, threshold);
+  printTimeElapsed(mergeStart, "multithread merging");
 
   // get time taken
   int multiThreadMergeSortTime =
@@ -352,11 +338,13 @@ void benchmarkMultiThreadMergeSort(int data_size) {
   double improvementOverQsort =
       oneThreadStdQsortTime == 0
           ? 0
-          : (double)oneThreadStdQsortTime / multiThreadMergeSortTime;
+          : (double)(oneThreadStdQsortTime - multiThreadMergeSortTime) /
+                oneThreadStdQsortTime;
   double improvementOverMergeSort =
       oneThreadMergeSortTime == 0
           ? oneThreadMergeSortTime
-          : (double)oneThreadMergeSortTime / multiThreadMergeSortTime;
+          : (double)(oneThreadMergeSortTime - multiThreadMergeSortTime) /
+                oneThreadMergeSortTime;
 
   printf(CYAN
          "Multi-threaded merge sort (threshold %d) is:\n"
@@ -379,9 +367,7 @@ int main(int argc, char **argv) {
   printf(RED "This is a %ld-core CPU\n\n\n" NONE,
          sysconf((_SC_NPROCESSORS_ONLN)));
 #endif
-
-  struct timeval start;
-  gettimeofday(&start, NULL);
+  clock_t start = clock();
 
   if (argc != 3) { // check if all arguments are given
     // fprintf(stderr, "Insufficient arguments");
@@ -397,18 +383,29 @@ int main(int argc, char **argv) {
   // generate numbers for sorting
   generateNumbersForSorting(rand_seed, data_size);
 
-  // Run the baseline sorting algorithm 1 -- qsort on 1 thread. (Record time)
+  // Run the baseline sorting algorithm 1
+  // qsort on 1 thread. (Record time)
   // Set correct comparing data (total diff)
   benchmarkOneThreadStdQsort(data_size);
 
-  // Run the baseline sorting algorithm 2 -- merge sort on 1 thread. (Record
-  // time)
+  // Run the baseline sorting algorithm 2
+  // merge sort on 1 thread. (Record time)
   benchmarkOneThreadMergeSort(data_size);
 
-  threshold = ceil((double)data_size / sysconf((_SC_NPROCESSORS_ONLN)));
-  benchmarkMultiThreadMergeSort(data_size);
+  int threshold = sysconf(_SC_NPROCESSORS_ONLN);
+  struct timeval ss;
+  gettimeofday(&ss, NULL);
 
-  cleanup();
+  benchmarkMultiThreadMergeSort(data_size, threshold);
+
+  struct timeval ee;
+  gettimeofday(&ee, NULL);
+  unsigned long diff =
+      1000000 * (ee.tv_sec - ss.tv_sec) + ee.tv_usec - ss.tv_usec;
+  printf(CYAN "Muitithread sorting takes %ld.%03ld\ns" NONE, diff / 1000000,
+         diff / 1000 % 1000);
+
+  // cleanup();
 
   printTimeElapsed(start, "entire program");
 
