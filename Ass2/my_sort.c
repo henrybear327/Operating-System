@@ -367,12 +367,12 @@ void benchmarkMultiThreadMergeSort(int data_size)
     double improvementOverQsort =
         oneThreadStdQsortTime == 0
         ? 0
-        : (double)(oneThreadStdQsortTime - multiThreadMergeSortTime) /
+        : (double)(multiThreadMergeSortTime) /
         oneThreadStdQsortTime;
     double improvementOverMergeSort =
         oneThreadMergeSortTime == 0
         ? oneThreadMergeSortTime
-        : (double)(oneThreadMergeSortTime - multiThreadMergeSortTime) /
+        : (double)(multiThreadMergeSortTime) /
         oneThreadMergeSortTime;
 
     printf(CYAN
