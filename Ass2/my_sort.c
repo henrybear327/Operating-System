@@ -33,7 +33,7 @@ int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 // obtained by calling benchmarkOneThreadMergeSort()
 int oneThreadMergeSortTime;
 
-inline int printTimeElapsed(int start, char *string)
+int printTimeElapsed(int start, char *string)
 {
     clock_t diff = clock() - start;
     int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
@@ -138,6 +138,8 @@ void benchmarkOneThreadStdQsort(int data_size)
 
 void mergeSortCombine(int left, int mid, int right)
 {
+    // printf("%d %d %d %d\n", left, mid, right, right - left);
+
     // merge two lists
     int pa = left, pb = mid;
     int *tmpData = (int*) malloc(sizeof(int) * (right - left));
@@ -147,7 +149,7 @@ void mergeSortCombine(int left, int mid, int right)
         abort();
     }
 
-    int idx = left;
+    int idx = 0;
     while (pa < mid && pb < right) {
         if (dataForSorting[pa] <= dataForSorting[pb])
             tmpData[idx++] = dataForSorting[pa++];
@@ -176,6 +178,7 @@ void mergeSort(int left, int right)
     int mid = (left + right) / 2;
     mergeSort(left, mid);
     mergeSort(mid, right);
+
     // printf("%d %d %d\n", left, mid, right);
     mergeSortCombine(left, mid, right);
 }
@@ -437,7 +440,7 @@ int main(int argc, char **argv)
     benchmarkOneThreadMergeSort(data_size);
 
     int threshold = ceil((double)data_size / (sysconf(_SC_NPROCESSORS_ONLN)));
-    benchmarkMultiThreadMergeSort(data_size, threshold);
+    // benchmarkMultiThreadMergeSort(data_size, threshold);
 
     cleanup();
 
