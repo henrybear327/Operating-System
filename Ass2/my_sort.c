@@ -1,13 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <assert.h>
-
 #include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
-
 #include <math.h>
 #include <semaphore.h>
 #include <time.h>
@@ -28,11 +25,12 @@
 #define GREEN "\033[0;32;32m"
 #define CYAN "\033[0;36m"
 
-int *originalData, *dataForSorting, *comparisionData, *tmpData;
+int *originalData, *dataForSorting, *comparisionData;
 
-// obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
+// obtained by calling benchmarkOneThreadStdQsort()
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 
+// obtained by calling benchmarkOneThreadMergeSort()
 int oneThreadMergeSortTime;
 
 inline int printTimeElapsed(int start, char *string)
@@ -58,7 +56,6 @@ void generateNumbersForSorting(int seed, int size)
     srand(seed);
     originalData = (int *)malloc(sizeof(int) * size);
     dataForSorting = (int *)malloc(sizeof(int) * size);
-    tmpData = (int *)malloc(sizeof(int) * size);
 
     for (int i = 0; i < size; i++)
         originalData[i] = rand();
@@ -103,7 +100,6 @@ void cleanup()
     free(originalData);
     free(dataForSorting);
     free(comparisionData);
-    free(tmpData);
 }
 
 void prepareArrayForSorting(int data_size)
@@ -144,6 +140,12 @@ void mergeSortCombine(int left, int mid, int right)
 {
     // merge two lists
     int pa = left, pb = mid;
+    int *tmpData = (int*) malloc(sizeof(int) * (right - left));
+    if(tmpData == NULL) {
+        printf(RED "Malloc failed! (left %d right %d)\n", left, right);
+        perror("Malloc failed");
+        abort();
+    }
 
     int idx = left;
     while (pa < mid && pb < right) {
@@ -159,8 +161,9 @@ void mergeSortCombine(int left, int mid, int right)
         tmpData[idx++] = dataForSorting[pb++];
 
     for (int i = 0; i < right - left; i++)
-        // dataForSorting[left + i] = tmpData[i];
-        dataForSorting[left + i] = tmpData[left + i];
+        dataForSorting[left + i] = tmpData[i];
+
+    free(tmpData);
 }
 
 // [left, right)
