@@ -25,7 +25,7 @@
 #define GREEN "\033[0;32;32m"
 #define CYAN "\033[0;36m"
 
-int *originalData, *dataForSorting, *comparisionData;
+int *originalData, *dataForSorting, *comparisionData, *mergeSortTmpArray;
 
 // obtained by calling benchmarkOneThreadStdQsort()
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
@@ -142,30 +142,22 @@ void mergeSortCombine(int left, int mid, int right)
 
     // merge two lists
     int pa = left, pb = mid;
-    int *tmpData = (int*) malloc(sizeof(int) * (right - left));
-    if(tmpData == NULL) {
-        printf(RED "Malloc failed! (left %d right %d)\n", left, right);
-        perror("Malloc failed");
-        abort();
-    }
 
-    int idx = 0;
+    int idx = left;
     while (pa < mid && pb < right) {
         if (dataForSorting[pa] <= dataForSorting[pb])
-            tmpData[idx++] = dataForSorting[pa++];
+            mergeSortTmpArray[idx++] = dataForSorting[pa++];
         else
-            tmpData[idx++] = dataForSorting[pb++];
+            mergeSortTmpArray[idx++] = dataForSorting[pb++];
     }
 
     while (pa < mid)
-        tmpData[idx++] = dataForSorting[pa++];
+        mergeSortTmpArray[idx++] = dataForSorting[pa++];
     while (pb < right)
-        tmpData[idx++] = dataForSorting[pb++];
+        mergeSortTmpArray[idx++] = dataForSorting[pb++];
 
     for (int i = 0; i < right - left; i++)
-        dataForSorting[left + i] = tmpData[i];
-
-    free(tmpData);
+        dataForSorting[left + i] = mergeSortTmpArray[i + left];
 }
 
 // [left, right)
@@ -187,6 +179,7 @@ void benchmarkOneThreadMergeSort(int data_size)
 {
     // prepare the array for sorting
     prepareArrayForSorting(data_size);
+    mergeSortTmpArray = (int*) malloc(sizeof(int) * data_size);
 
     // start merge sort!
     clock_t start = clock();
@@ -206,6 +199,8 @@ void benchmarkOneThreadMergeSort(int data_size)
 #endif
 
     print_result(data_size, "benchmarkOneThreadMergeSort");
+
+    free(mergeSortTmpArray);
 }
 
 /********************************************************/
@@ -219,43 +214,49 @@ struct sorting_parameter { // [l, r)
     int* dataToSort;
 };
 
-int myThreadIndex;
-pthread_t mythread[MAX_PROCESSER];
-struct sorting_parameter param[MAX_PROCESSER];
+int myThreadIndex, done;
+pthread_t *mythread;
+struct sorting_parameter *param;
 
-int done;
+void multiThreadMergeSortMerger(int left, int right, int threshold)
+{
+    // printf("%d %d\n", left, right);
+    if (right - left < 2)
+        return;
+
+    int mid = (left + right) / 2;
+
+    //  recursive call until threshold is met
+    if (right - left <= threshold * 2) {
+        // printf("%d %d %d\n", left, mid, right);
+        mergeSortCombine(left, mid, right);
+    } else {
+        multiThreadMergeSortMerger(left, mid, threshold);
+        multiThreadMergeSortMerger(mid, right, threshold);
+        mergeSortCombine(left, mid, right);
+    }
+    // printf("%d %d %d\n", left, mid, right);
+
+    return;
+}
 
 void *multiThreadMergeSort(void *argument)
 {
     struct sorting_parameter *param = (struct sorting_parameter *)argument;
     int left = param->left_bound;
     int right = param->right_bound;
+    int *dataToSort = param->dataToSort;
 
     clock_t start = clock();
 
     // call the normal mergeSort to do the job!
     // mergeSort(left, right);
-    qsort(param->dataToSort, right - left, sizeof(int), cmp);
-    memcpy(dataForSorting + left, param->dataToSort, sizeof(int) * (right - left));
-
-
-    int diff = clock() - start;
-    int milliseconds = diff * 1000 / CLOCKS_PER_SEC;
-    // user + system
-    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE,
-           "Done sub-sorting", milliseconds / 1000, milliseconds % 1000);
-
-    start = clock();
-
+    qsort(dataToSort, right - left, sizeof(int), cmp);
     pthread_mutex_lock(&mutex);
-    done++;
+    memcpy(dataForSorting + left, dataToSort, sizeof(int) * (right - left));
     pthread_mutex_unlock(&mutex);
 
-    diff = clock() - start;
-    milliseconds = diff * 1000 / CLOCKS_PER_SEC;
-    // user + system
-    printf(CYAN "Total time taken by the %s is %d.%03d second(s)\n" NONE,
-           "Wait for Mutex", milliseconds / 1000, milliseconds % 1000);
+    printTimeElapsed(start, "merge sort in threads");
 
     pthread_exit(NULL);
 }
@@ -310,28 +311,6 @@ void multiThreadMergeSortCreater(int left, int right, int threshold)
     // printf("%d %d %d\n", left, mid, right);
 }
 
-void multiThreadMergeSortMerger(int left, int right, int threshold)
-{
-    // printf("%d %d\n", left, right);
-    if (right - left < 2)
-        return;
-
-    int mid = (left + right) / 2;
-
-    //  recursive call until threshold is met
-    if (right - left <= threshold * 2) {
-        // printf("%d %d %d\n", left, mid, right);
-        mergeSortCombine(left, mid, right);
-    } else {
-        multiThreadMergeSortMerger(left, mid, threshold);
-        multiThreadMergeSortMerger(mid, right, threshold);
-        mergeSortCombine(left, mid, right);
-    }
-    // printf("%d %d %d\n", left, mid, right);
-
-    return;
-}
-
 void benchmarkMultiThreadMergeSort(int data_size, int threshold)
 {
     assert(threshold > 0);
@@ -346,25 +325,33 @@ void benchmarkMultiThreadMergeSort(int data_size, int threshold)
     myThreadIndex = 0;
     done = 0;
 
+    // pthread_t *mythread;
+    // struct sorting_parameter *param;
+
+    // TODO: use malloc to put shits on heap, to increase speed?
+    param = (struct sorting_parameter*) malloc(sizeof(struct sorting_parameter) * threshold);
+    mythread = (pthread_t*) malloc(sizeof(pthread_t) * threshold);
+
     // start merge sort!
     clock_t start = clock();
 
     multiThreadMergeSortCreater(0, data_size, threshold);
 
-    clock_t start1;
-    while (1) {
-        pthread_mutex_lock(&mutex);
-        if (done == myThreadIndex) {
-            printTimeElapsed(start, "done sorting");
-            start1 = clock();
-
-            multiThreadMergeSortMerger(0, data_size, threshold);
-            break;
+    for(int i = 0; i < myThreadIndex; i++) {
+        // printf("Joining thread %d\n", i);
+        if (pthread_join(mythread[i], NULL)) { // pthread_join force the main process to wait for mythread to finish
+            printf(RED "Error joining thread %d\n", i);
+            perror("Joining threads failed");
+            abort();
         }
-        pthread_mutex_unlock(&mutex);
     }
 
-    printTimeElapsed(start1, "done merging");
+    printTimeElapsed(start, "done sorting");
+
+    clock_t mergeStart = clock();
+    multiThreadMergeSortMerger(0, data_size, threshold);
+
+    printTimeElapsed(mergeStart, "done merging");
 
     // get time taken
     int multiThreadMergeSortTime =
@@ -440,7 +427,7 @@ int main(int argc, char **argv)
     benchmarkOneThreadMergeSort(data_size);
 
     int threshold = ceil((double)data_size / (sysconf(_SC_NPROCESSORS_ONLN)));
-    // benchmarkMultiThreadMergeSort(data_size, threshold);
+    benchmarkMultiThreadMergeSort(data_size, threshold);
 
     cleanup();
 
