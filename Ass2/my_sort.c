@@ -250,8 +250,6 @@ void *multiThreadMergeSort(void *argument)
     int right = param->right_bound;
     int selfIndex = param->selfIndex;
 
-    fflush(stdout);
-
     // call the normal mergeSort to do the job!
     // mergeSort(left, right);
     qsort(dataForSorting + left, right - left, sizeof(int), cmp);
