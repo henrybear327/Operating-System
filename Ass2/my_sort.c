@@ -48,7 +48,9 @@ int *originalData, *dataForSorting, *comparisionData, *tmpData;
 // obtained by calling benchmarkOneThreadStdQsort() -- baseline comparator
 int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 
+// obtained by calling benchmarkOneThreadMergeSort() -- baseline comparator
 int oneThreadMergeSortTime;
+
 
 inline int printTimeElapsed(struct timeval start, char *string)
 {
@@ -112,7 +114,7 @@ void print_result(int data_size, char *string)
         string, distanceSum);
 
     printf("\n");
-#if DEBUG == 1
+#if DEBUG != 0
     assert(distanceSum == dataForSorting[data_size - 1] - dataForSorting[0]);
 #endif
 }
@@ -248,7 +250,6 @@ void *multiThreadMergeSort(void *argument)
     struct sorting_parameter *param = (struct sorting_parameter *)argument;
     int left = param->left_bound;
     int right = param->right_bound;
-    int selfIndex = param->selfIndex;
 
     // call the normal mergeSort to do the job!
     // mergeSort(left, right);
@@ -334,7 +335,8 @@ void multiThreadMergeSortMerger(int left, int right)
 
 void benchmarkMultiThreadMergeSort(int data_size)
 {
-    assert(threshold > 0);
+    if(threshold == 0)
+        threshold = data_size;
 
     // prepare the array for sorting
     prepareArrayForSorting(data_size);
@@ -352,14 +354,14 @@ void benchmarkMultiThreadMergeSort(int data_size)
 
     multiThreadMergeSortCreater(0, data_size);
 
-    while (1) {
-        pthread_mutex_lock(&mutex);
-        if (done == myThreadIndex) {
-            multiThreadMergeSortMerger(0, data_size);
-            break;
+    for(int i = 0; i < myThreadIndex; i++) {
+        if (pthread_join(mythread[i], NULL)) {
+            printf("Error joining thread %d\n", i);
+            perror("Error joining thread");
+            abort();
         }
-        pthread_mutex_unlock(&mutex);
     }
+    multiThreadMergeSortMerger(0, data_size);
 
     // get time taken
     int multiThreadMergeSortTime =
