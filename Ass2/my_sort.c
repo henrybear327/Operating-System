@@ -53,7 +53,6 @@ int oneThreadMergeSortTime;
 
 volatile int totalDistance;
 
-
 inline int printTimeElapsed(struct timeval start, char *string)
 {
     struct timeval end;
@@ -109,7 +108,7 @@ void print_result(int data_size, char *string)
 #if DEBUG != 0
     int distanceSum = 0;
 
-	// in debug mode, use non-parallel version
+    // in debug mode, use non-parallel version
     for (int i = 1; i < data_size; i++)
         distanceSum += dataForSorting[i] - dataForSorting[i - 1];
     printf(
@@ -241,6 +240,7 @@ struct sorting_parameter { // [l, r)
     int left_bound, right_bound;
     int state; // 0 unused, 1 using, 2 terminated
     int selfIndex;
+    int data_size;
 };
 
 int myThreadIndex;
@@ -337,9 +337,51 @@ void multiThreadMergeSortMerger(int left, int right)
     return;
 }
 
+void *multiThreadAdd(void *argument)
+{
+    struct sorting_parameter *param = (struct sorting_parameter *)argument;
+    int left = param->left_bound;
+    int right = param->right_bound;
+    int data_size = param->data_size;
+
+    int diff = 0;
+    // 0 1 2 | 3 4 5 | 6 7 8
+    for (int i = left + 1; i < data_size && i <= right; i++)
+        diff += dataForSorting[i] - dataForSorting[i - 1];
+
+    pthread_mutex_lock(&mutex);
+    totalDistance += diff;
+    pthread_mutex_unlock(&mutex);
+
+    pthread_exit(NULL);
+}
+
+void print_result_multi(int data_size)
+{
+    for (int i = 0; i < myThreadIndex; i++) {
+        param[i].data_size = data_size;
+        if (pthread_create(&mythread[i], NULL, multiThreadAdd, &param[i]) != 0) {
+            perror("Error creating thread");
+
+            abort();
+        }
+    }
+
+    for (int i = 0; i < myThreadIndex; i++) {
+        if (pthread_join(mythread[i], NULL)) {
+            printf("Error joining thread %d\n", i);
+            perror("Error joining thread");
+            abort();
+        }
+    }
+
+    printf("The total distance is %d\n", totalDistance);
+    assert(totalDistance == totalDistanceCorrectAnswer);
+}
+
 void benchmarkMultiThreadMergeSort(int data_size)
 {
-    if(threshold == 0)
+    if (threshold == 0)
         threshold = data_size;
 
     // prepare the array for sorting
@@ -358,7 +400,7 @@ void benchmarkMultiThreadMergeSort(int data_size)
 
     multiThreadMergeSortCreater(0, data_size);
 
-    for(int i = 0; i < myThreadIndex; i++) {
+    for (int i = 0; i < myThreadIndex; i++) {
         if (pthread_join(mythread[i], NULL)) {
             printf("Error joining thread %d\n", i);
             perror("Error joining thread");
@@ -371,7 +413,7 @@ void benchmarkMultiThreadMergeSort(int data_size)
     int multiThreadMergeSortTime =
         printTimeElapsed(start, "benchmarkMultiThreadMergeSort");
 
-    print_result(data_size, "benchmarkMultiThreadMergeSort");
+    print_result_multi(data_size);
 
 #if DEBUG != 0
     // check multi-thread merge sort solution against the qsort solution
