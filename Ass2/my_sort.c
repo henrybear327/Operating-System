@@ -51,6 +51,8 @@ int oneThreadStdQsortTime, totalDistanceCorrectAnswer;
 // obtained by calling benchmarkOneThreadMergeSort() -- baseline comparator
 int oneThreadMergeSortTime;
 
+volatile int totalDistance;
+
 
 inline int printTimeElapsed(struct timeval start, char *string)
 {
@@ -98,14 +100,16 @@ void generateNumbersForSorting(int seed, int size)
 
 void print_result(int data_size, char *string)
 {
-    int distanceSum = 0;
-
 #if DEBUG == 2
     printf(GREEN "The sorted array after doing %s is...\n" NONE, string);
     for (int i = 0; i < data_size; i++)
         printf("%d%c", dataForSorting[i], i == data_size - 1 ? '\n' : ' ');
 #endif
 
+#if DEBUG != 0
+    int distanceSum = 0;
+
+	// in debug mode, use non-parallel version
     for (int i = 1; i < data_size; i++)
         distanceSum += dataForSorting[i] - dataForSorting[i - 1];
     printf(
@@ -114,7 +118,7 @@ void print_result(int data_size, char *string)
         string, distanceSum);
 
     printf("\n");
-#if DEBUG != 0
+
     assert(distanceSum == dataForSorting[data_size - 1] - dataForSorting[0]);
 #endif
 }
