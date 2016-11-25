@@ -105,10 +105,8 @@ void print_result(int data_size, char *string)
         printf("%d%c", dataForSorting[i], i == data_size - 1 ? '\n' : ' ');
 #endif
 
-#if DEBUG != 0
     int distanceSum = 0;
 
-    // in debug mode, use non-parallel version
     for (int i = 1; i < data_size; i++)
         distanceSum += dataForSorting[i] - dataForSorting[i - 1];
     printf(
@@ -118,6 +116,7 @@ void print_result(int data_size, char *string)
 
     printf("\n");
 
+#if DEBUG != 0
     assert(distanceSum == dataForSorting[data_size - 1] - dataForSorting[0]);
 #endif
 }
