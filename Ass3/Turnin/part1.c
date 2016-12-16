@@ -13,7 +13,7 @@ int main()
     for (int i = 0; i < N / 4; i++)
         data[i] = rand();
 
-    int idx = rand() % N;
+    int idx = rand() % (N / 4);
     printf("data[%d] = %d\n", idx, data[idx]);
 
     scanf("%d", &n);
