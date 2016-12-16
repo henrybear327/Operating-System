@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define N 10485760
+#define N (int)1e9
 
 int main()
 {
