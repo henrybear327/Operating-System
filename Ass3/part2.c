@@ -11,8 +11,6 @@ int main()
 {
     srand(time(NULL));
 
-    ll size = 0;
-
     int *ptr[M];
     for(int i = 0; i < M; i++) {
 		printf("Now on %d\n", i);
@@ -20,7 +18,6 @@ int main()
         if (ptr[i] == NULL) {
             break;
         }
-        size++;
 
         for(int j = 0; j < N; j++)
             ptr[i][j] = rand() % N;
