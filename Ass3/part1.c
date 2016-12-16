@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define N (int)1e9
+#define N (int)1e9 // change to 40 * 1024 * 1024 = 41943040 for 40 MB
 
 int main()
 {
